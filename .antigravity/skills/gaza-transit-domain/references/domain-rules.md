@@ -1,12 +1,28 @@
 # Gaza Transit Domain Reference
 
-## 1. Arterial Corridors & Route Topography
+## 1. Arterial Corridors & Bidirectional Topography (<->)
 Routes in the Gaza Strip are predominantly linear north-south arteries bisected by key east-west junctions:
-- **Salah al-Din Road (طريق صلاح الدين)**: The central spine connecting Rafah, Khan Younis, Deir al-Balah, al-Bureij, al-Nuseirat, and Gaza City.
-- **Al-Rashid Road (شارع الرشيد الساحلي)**: The coastal axis running along the Mediterranean shoreline.
-- **Key Cross Connectors**: Connecting coastal areas to the central spine (e.g., Netzarim junction axis, Wadi Gaza crossing, Khan Younis western roads).
+- **Salah al-Din Road (طريق صلاح الدين)**: The central spine connecting Rafah <-> Khan Younis <-> Deir al-Balah <-> Middle Area <-> Gaza City.
+- **Al-Rashid Road (شارع الرشيد الساحلي)**: The coastal axis running along the Mediterranean shoreline (<->).
+- **Key Cross Connectors**: Connecting coastal areas to the central spine.
 
-Every fixed route must be an ordered sequence of recognized landmarks/intersections, preserving transit continuity.
+Every fixed route is bidirectional (<->) with an ordered sequence of recognized landmarks/intersections.
+
+## 2. No Platform Fares (With Special Offer Exception) & No Speculative Time
+- **Zero Fixed Route Fare Calculations**: The platform strictly avoids computing fares, seat costs, or multi-leg price totals on daily routes. Public transit fares are paid in cash in person.
+- **Special Offer Price Exception**: For private charters / special requests (مراسلة), drivers submit their own direct, binding price quote (in ILS / ₪) as part of their bid. This is a single agreed trip price, not a complex platform fare table.
+- **Real-World Positions, Never Guesswork**: Do not display artificial "Estimated Time of Arrival" (ETA) or speculative transit durations. Show exactly **where the vehicle was last recorded and how many minutes ago** (e.g., "آخر موقع: دوار الكويت، منذ 4 دقائق").
+- **GPS Sync Reality**: On mobile browsers, location updates broadcast while the driver has the web app open. If Android screen/browser holds foreground sync, coordinates refresh continuously; iOS deep background tracking will be handled in a dedicated future Swift app.
+
+## 3. Pre-Trip Rider Confirmation & Cancellation Workflow
+- **Pre-Departure Check**: Before tapping "Start Trip", the driver dashboard displays the list of confirmed riders with direct `tel:` call buttons.
+- **No-Show / Unready Cancellations**: If a driver calls a rider and the rider is unready or unresponsive, the driver can cancel that specific booking.
+- **Rider Alert**: The cancelled rider's app immediately updates with an explanatory status banner: *"تم إلغاء حجزك من قِبل السائق لعدم الجاهزية عند بدء الرحلة"* so there is no ambiguity.
+
+## 4. Route Drift Detection & Rider Notifications
+- Drivers often must take unexpected detours (sand roads, checkpoints, diversions) without manually editing their route on the dashboard.
+- **Drift Logic**: If a vehicle with confirmed bookings drifts away from its route corridor stops beyond a reasonable buffer, the system flags the vehicle as `drifting` (انحراف عن المسار).
+- **Rider Alert**: All riders with active bookings on that vehicle receive an immediate contextual banner: *"المركبة غيرت مسارها حالياً — اضغط للاتصال بالسائق"* with a direct `tel:` tap-to-call button.
 
 ## 2. Vehicle Dynamics: The 'Ajala (عجلة) & One-Vehicle Rule
 - **One Vehicle Per Driver Account**: Strict 1:1 relationship between a driver profile and their registered vehicle. No fleet management or multi-vehicle complexity.

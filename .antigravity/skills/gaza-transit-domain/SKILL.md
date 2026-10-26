@@ -17,12 +17,22 @@ Domain-specific rules and constraints for public transit and private rides in th
    - **Unified Schedule Control**: Drivers configure their weekly work days and operating hours in a single, simple window. Any urgent changes or day-off adjustments are made directly in this same window without navigating complex sub-menus.
    - **Temporary Route Deviations**: Ability to temporarily deviate, adjust hours, or go "off-route" for errands.
    - **Vehicle Maintenance**: One-tap toggle to mark vehicle "Under Maintenance" (تحت الصيانة) to freeze active schedules and seat bookings.
-3. **Fares & Currency**:
-   - Priced per seat, per leg, in New Israeli Shekels (**ILS / ₪**). Multi-leg journeys may span multiple vehicles.
-4. **Special Requests (مراسلة)**:
+3. **Fares Policy**:
+   - **Fixed Daily Routes**: The platform does **not** calculate, estimate, or enforce fares. Regular public transit fares are handled offline in cash.
+   - **Special Offers (مراسلة) Exception**: Drivers **do** include their own custom total price quote (in ILS / ₪) when submitting a bid on a private request.
+4. **Pre-Trip Confirmation & Driver Cancellations**:
+   - Before tapping "Start Trip", the driver reviews all booked riders and calls them to confirm readiness.
+   - If a rider is unreachable or not ready, the driver can cancel that individual booking.
+   - The rider is immediately notified in-app of the cancellation.
+5. **No Speculative Time Estimations & GPS Reality**:
+   - Never show speculative or theoretical travel time estimates. Display **real last-known position and its age** (e.g., "At Netzarim Junction, 3 mins ago").
+   - Routes run **back and forth (<->)** along main corridors.
+6. **Route Drift Alerts**:
+   - If a vehicle with active bookings drifts off its designated route stops, the platform alerts booked riders immediately so they can tap to call the driver.
+7. **Special Requests (مراسلة)**:
    - Riders post private requests (origin, destination, date, time, seats).
-   - Private drivers submit offers (driver name, vehicle photos, phone, price). Rider chats in-app and accepts one.
-5. **Localization & Names**:
+   - Private drivers submit offers with a price quote, vehicle photos, and phone. Rider chats in-app and accepts one.
+7. **Strict Privacy & OpenStreetMap**:
    - UI exclusively in **Palestinian Arabic (RTL)** for non-technical users. Technical jargon remains in code.
    - All place names and coordinates must come strictly from **OpenStreetMap** for Gaza. Never hallucinate locations.
 6. **Strict Privacy**:
