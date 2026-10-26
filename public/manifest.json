@@ -1,0 +1,20 @@
+{
+  "name": "مشوار - شبكة المواصلات الحية بغزة",
+  "short_name": "مشوار",
+  "description": "تطبيق المواصلات والرحلات في قطاع غزة، تتبع حي للمركبات، حجز مقاعد، ويعمل بدون إنترنت",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d9488",
+  "theme_color": "#0d9488",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/images/sample-ajala.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -107,4 +107,50 @@ class DriverRouteController extends Controller
             'status_arabic' => $route->status_arabic,
         ]);
     }
+
+    /**
+     * Broadcast live GPS position during active trip.
+     * Only updates when driver is online and trip is active.
+     */
+    public function updatePosition(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
+        $route = $user->driverRoute;
+        if (! $route) {
+            return response()->json(['error' => 'لا يوجد خط سير مسجل'], 404);
+        }
+
+        $validated = $request->validate([
+            'lat' => ['required', 'numeric', 'between:31.1,31.7'],
+            'lng' => ['required', 'numeric', 'between:34.1,34.6'],
+            'landmark' => ['nullable', 'string', 'max:150'],
+            'is_trip_active' => ['nullable', 'boolean'],
+        ]);
+
+        $route->update([
+            'last_latitude' => $validated['lat'],
+            'last_longitude' => $validated['lng'],
+            'last_landmark' => $validated['landmark'] ?? $route->last_landmark,
+            'is_trip_active' => $validated['is_trip_active'] ?? $route->is_trip_active,
+            'last_position_at' => now(),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم تحديث الموقع المباشر بنجاح',
+            'position' => [
+                'lat' => (float) $route->last_latitude,
+                'lng' => (float) $route->last_longitude,
+                'landmark' => $route->last_landmark,
+                'last_position_at' => $route->last_position_at?->toISOString(),
+                'position_age_arabic' => $route->position_age_arabic,
+                'is_trip_active' => (bool) $route->is_trip_active,
+            ],
+        ]);
+    }
 }

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RoleChoiceController;
 use App\Http\Controllers\Driver\DriverRouteController;
 use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
+use App\Http\Controllers\Rides\ActiveVehicleController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,10 +17,14 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Guest Access Home Screen
+// Rider Home Screen (Accessible to Guests and Authenticated Riders)
 Route::get('/', function () {
-    return view('welcome');
+    return view('rider.home');
 })->name('home');
+
+Route::get('/rides', function () {
+    return view('rider.home');
+})->name('rider.home');
 
 // Google Socialite Authentication
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
@@ -30,11 +35,6 @@ Route::get('/auth/google/mock', [GoogleAuthController::class, 'mockLogin'])->nam
 Route::middleware('auth')->group(function () {
     Route::get('/auth/role-choice', [RoleChoiceController::class, 'show'])->name('role.choice');
     Route::post('/auth/role-choice', [RoleChoiceController::class, 'store'])->name('role.choice.store');
-
-    // Role-specific landing destinations
-    Route::get('/rides', function () {
-        return view('rider.home');
-    })->name('rider.home');
 
     Route::get('/driver', function () {
         /** @var User $user */
@@ -67,10 +67,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/driver/route', [DriverRouteController::class, 'show'])->name('api.driver.route.show');
     Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');
     Route::post('/api/driver/route/status', [DriverRouteController::class, 'updateStatus'])->name('api.driver.route.status');
+    Route::post('/api/driver/position', [DriverRouteController::class, 'updatePosition'])->name('api.driver.position');
 });
 
 // Verified OpenStreetMap Gaza Gazetteer
 Route::get('/api/gazetteer', [GazetteerController::class, 'index'])->name('api.gazetteer');
+
+// Active Transit Vehicles & Search (Open to Guests and Riders)
+Route::get('/api/rides/active-vehicles', [ActiveVehicleController::class, 'index'])->name('api.rides.active');
 
 /*
 |--------------------------------------------------------------------------
