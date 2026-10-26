@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="مشوار">
     <meta name="theme-color" content="#0d9488">
+    <link rel="manifest" href="/manifest.json">
 
     <!-- Fonts: Cairo for Arabic UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,6 +90,17 @@
             </a>
         @endauth
     </nav>
+
+    <!-- PWA Service Worker Registration for Offline Tiles -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.warn('Service worker registration note:', err);
+                });
+            });
+        }
+    </script>
 
     @stack('scripts')
 </body>

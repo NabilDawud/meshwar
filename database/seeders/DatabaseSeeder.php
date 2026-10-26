@@ -60,6 +60,11 @@ class DatabaseSeeder extends Seeder
                 'start_point' => 'دوار العودة - وسط رفح',
                 'first_trip_time' => '06:30',
                 'status' => 'on_route',
+                'is_trip_active' => true,
+                'last_latitude' => 31.3456,
+                'last_longitude' => 34.3182,
+                'last_landmark' => 'دوار بني سهيلا',
+                'last_position_at' => now()->subMinutes(3),
                 'stops' => [
                     [
                         'order' => 1,

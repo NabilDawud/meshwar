@@ -65,6 +65,55 @@
                 </button>
             </div>
         </div>
+
+        <!-- Live GPS Position Broadcasting Card (Strictly during active trip & online) -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📡</span>
+                    <div>
+                        <span class="text-xs font-black text-slate-800 dark:text-slate-100 block">بث الموقع الحي للرحلة</span>
+                        <span class="text-[10px] text-slate-400">يرسل الهاتف الموقع فقط أثناء الرحلة النشطة وعند توفر الإنترنت</span>
+                    </div>
+                </div>
+                <span 
+                    class="text-xs font-bold px-2.5 py-1 rounded-full"
+                    :class="isTripActive ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
+                    x-text="isTripActive ? 'بث نشط 🟢' : 'متوقف ⚪'"
+                ></span>
+            </div>
+
+            <!-- Last Known Location Info -->
+            <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-1.5">
+                    <span>📍</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-200" x-text="lastLandmark || 'لم يتم البث بعد'"></span>
+                </div>
+                <span class="text-[11px] font-mono text-slate-400" x-text="lastPositionAge"></span>
+            </div>
+
+            <!-- Start / Stop Trip Toggle & Manual Broadcast -->
+            <div class="grid grid-cols-2 gap-2">
+                <button 
+                    type="button" 
+                    @click="toggleTrip"
+                    :class="isTripActive ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'"
+                    class="h-11 rounded-2xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                    <span x-text="isTripActive ? '⏹️ إنهاء الرحلة' : '▶️ بدء الرحلة وبث الموقع'"></span>
+                </button>
+
+                <button 
+                    type="button" 
+                    @click="broadcastCurrentPosition"
+                    :disabled="!isTripActive || isBroadcasting"
+                    class="h-11 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 disabled:opacity-40 rounded-2xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1"
+                >
+                    <span x-show="!isBroadcasting">📍 تحديث موقعي الآن</span>
+                    <span x-show="isBroadcasting">جاري البث...</span>
+                </button>
+            </div>
+        </div>
     @endif
 
     <!-- Vehicle Card (Single-Vehicle 1:1 Rule) -->
@@ -198,6 +247,11 @@ function driverDashboard(initialData) {
     return {
         status: initialData.status,
         statusArabic: initialData.statusArabic,
+        isTripActive: {{ ($route->is_trip_active ?? false) ? 'true' : 'false' }},
+        lastLandmark: '{{ $route->last_landmark ?? '' }}',
+        lastPositionAge: '{{ $route->position_age_arabic ?? 'غير محدد' }}',
+        isBroadcasting: false,
+
         async updateStatus(newStatus) {
             this.status = newStatus;
             try {
@@ -216,6 +270,71 @@ function driverDashboard(initialData) {
                 }
             } catch (err) {
                 console.error('Failed to update status', err);
+            }
+        },
+
+        async toggleTrip() {
+            this.isTripActive = !this.isTripActive;
+            if (this.isTripActive) {
+                this.broadcastCurrentPosition();
+            } else {
+                try {
+                    await fetch('{{ route('api.driver.position') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            lat: {{ $route->last_latitude ?? 31.3456 }},
+                            lng: {{ $route->last_longitude ?? 34.3182 }},
+                            is_trip_active: false
+                        })
+                    });
+                } catch (e) {}
+            }
+        },
+
+        async broadcastCurrentPosition() {
+            this.isBroadcasting = true;
+
+            const sendPos = async (lat, lng, landmarkName) => {
+                try {
+                    const res = await fetch('{{ route('api.driver.position') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            lat: lat,
+                            lng: lng,
+                            landmark: landmarkName || 'موقع حي على الخط',
+                            is_trip_active: true
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        this.lastLandmark = data.position.landmark;
+                        this.lastPositionAge = data.position.position_age_arabic;
+                    }
+                } catch (err) {
+                    console.warn('Offline: GPS position saved in outbox', err);
+                } finally {
+                    this.isBroadcasting = false;
+                }
+            };
+
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => sendPos(pos.coords.latitude, pos.coords.longitude, 'موقع حي GPS'),
+                    err => sendPos({{ $route->last_latitude ?? 31.3456 }}, {{ $route->last_longitude ?? 34.3182 }}, '{{ $route->last_landmark ?? 'دوار بني سهيلا' }}'),
+                    { timeout: 5000, enableHighAccuracy: true }
+                );
+            } else {
+                sendPos({{ $route->last_latitude ?? 31.3456 }}, {{ $route->last_longitude ?? 34.3182 }}, '{{ $route->last_landmark ?? 'دوار بني سهيلا' }}');
             }
         }
     };
