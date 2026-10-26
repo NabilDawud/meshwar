@@ -15,5 +15,9 @@
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "@mapbox/mapbox-gl-rtl-text": "^1.0.0",
+        "maplibre-gl": "^6.16.0"
     }
 }
