@@ -9,15 +9,14 @@ Domain-specific rules and constraints for public transit and private rides in th
 
 ## Quick Reference Rules
 
-1. **Vehicles**:
-   - Standard passenger cars (4–7 seats).
-   - Buses and minibuses (variable capacity).
-   - **'Ajala (عجلة)**: Passenger cart towed by a vehicle; driver-set capacity and distinct driver-taken photos for street identification.
-2. **Driver Routes & Operational Flexibility**:
-   - Each driver registers a **default daily route** (ordered stops along Salah al-Din, al-Rashid coastal road, or cross streets) with a start point and first-trip time.
-   - **Temporary Route Deviations**: Drivers can temporarily override their default route for specific hours of a day or go "off-route" directly from the dashboard.
-   - **Skip Work / Days Off**: Drivers can toggle specific days off (إجازة); the schedule removes them for those dates.
-   - **Vehicle Maintenance**: Vehicles can be flagged as "Under Maintenance" (تحت الصيانة), automatically pausing availability for bookings and route listings.
+1. **Vehicles (One Vehicle Per Account)**:
+   - Exactly **one vehicle per driver account** (1:1). No multi-vehicle or fleet abstractions.
+   - Vehicle types: Standard car (4–7 seats), Bus/minibus (variable capacity), or **'Ajala (عجلة)** (passenger cart with driver-set capacity and identifier photos).
+2. **Driver Routes, Workdays & Operating Hours**:
+   - **Route Flexibility**: Drivers can easily change their route (e.g., from A -> B to C -> D) and daily operating hours at any time directly from their dashboard.
+   - **Unified Schedule Control**: Drivers configure their weekly work days and operating hours in a single, simple window. Any urgent changes or day-off adjustments are made directly in this same window without navigating complex sub-menus.
+   - **Temporary Route Deviations**: Ability to temporarily deviate, adjust hours, or go "off-route" for errands.
+   - **Vehicle Maintenance**: One-tap toggle to mark vehicle "Under Maintenance" (تحت الصيانة) to freeze active schedules and seat bookings.
 3. **Fares & Currency**:
    - Priced per seat, per leg, in New Israeli Shekels (**ILS / ₪**). Multi-leg journeys may span multiple vehicles.
 4. **Special Requests (مراسلة)**:

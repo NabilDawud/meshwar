@@ -8,8 +8,9 @@ Routes in the Gaza Strip are predominantly linear north-south arteries bisected 
 
 Every fixed route must be an ordered sequence of recognized landmarks/intersections, preserving transit continuity.
 
-## 2. Vehicle Dynamics: The 'Ajala (عجلة)
-- **Concept**: A modified passenger trailer or open-air cart towed by a motor vehicle. It is currently the primary mass-transit vehicle in several areas.
+## 2. Vehicle Dynamics: The 'Ajala (عجلة) & One-Vehicle Rule
+- **One Vehicle Per Driver Account**: Strict 1:1 relationship between a driver profile and their registered vehicle. No fleet management or multi-vehicle complexity.
+- **The 'Ajala (عجلة)**: A modified passenger trailer or open-air cart towed by a motor vehicle. It is currently the primary mass-transit vehicle in several areas.
 - **Capacity**: Manually calibrated by each driver (may vary from 6 to 20+ riders depending on cart size).
 - **Visual Recognition**: Because distinct license plates or livery are often absent or obscured, the driver must upload high-contrast exterior photos of their specific 'Ajala so passengers can immediately spot it approaching.
 
@@ -27,17 +28,16 @@ Every fixed route must be an ordered sequence of recognized landmarks/intersecti
 - **Explicit Geolocation**: Never silently sample user GPS. Prompt with clear Palestinian Arabic explanation before polling `navigator.geolocation`.
 
 ## 5. Driver Availability & Fleet State Machine
-- **Default Route vs Temporary Override**:
-  - The driver stores a master daily route template (e.g., Rafah to Gaza City via Salah al-Din).
-  - The driver dashboard provides a simple one-tap operational control:
-    - **On Default Route** (على الخط المعتاد): Standard daily schedule active.
-    - **Temporary Custom Route** (مسار مؤقت): Allows selecting an alternate stop sequence or time window without overwriting the master template.
-    - **Off-Route / On Errand** (خارج الخط حالياً): Temporarily hides the vehicle from public transit searches for a selected number of hours.
-- **Days Off & Schedule Skipping**:
-  - Drivers can mark specific days as off (يوم إجازة / معطل اليوم).
-  - The booking and schedule listing engine automatically hides the driver for those selected dates.
+- **Route Editing & Dynamic Switching**:
+  - Drivers can change their active route (e.g. changing from Route A -> B to Route C -> D) and daily operating hours whenever they choose.
+  - Route modification is accessible directly from the driver home dashboard with instant update propagation.
+- **Unified Workdays & Hours Interface**:
+  - Drivers set their regular working days of the week (e.g., Saturday through Thursday) and active hours in a single simple window.
+  - **Urgent Adjustments**: Any urgent change (e.g. taking tomorrow off, starting late, finishing early) is completed from the exact same interface by toggling the day or updating hours directly, without complex separate leave requests.
+- **Temporary Route Deviations & Off-Route**:
+  - Drivers can temporarily deviate from their assigned route or mark themselves "Off-Route / On Errand" (خارج الخط حالياً) for a specific number of hours.
 - **Vehicle Maintenance Status**:
   - Vehicles maintain an explicit status: `active` | `maintenance` | `inactive`.
-  - When a vehicle is marked `maintenance` (تحت الصيانة):
+  - When marked `maintenance` (تحت الصيانة):
     - Automatically pauses all active route listings and prevents accepting new seat bookings or charter offers.
     - Driver dashboard displays an active maintenance banner with a single-tap "Mark Ready for Service" toggle (جاهز للعمل).
