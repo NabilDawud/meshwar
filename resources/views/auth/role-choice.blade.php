@@ -72,7 +72,11 @@
                     <span>رقم الجوال (للتواصل وتأكيد الحجز)</span>
                     <span class="text-rose-500">*</span>
                 </label>
-                <div class="relative flex items-center">
+                <div class="flex items-center rounded-2xl border-2 {{ $errors->has('phone') ? 'border-rose-400 focus-within:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus-within:border-teal-500' }} bg-white dark:bg-slate-900 shadow-sm overflow-hidden transition">
+                    <span class="px-3 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold border-e border-slate-200 dark:border-slate-700 flex items-center gap-1.5 select-none shrink-0" dir="ltr">
+                        <span>🇵🇸</span>
+                        <span class="text-xs font-mono text-slate-600 dark:text-slate-300">059 / 056</span>
+                    </span>
                     <input 
                         type="tel" 
                         name="phone" 
@@ -80,13 +84,10 @@
                         dir="ltr"
                         required
                         inputmode="numeric"
-                        placeholder="059XXXXXXX أو 056XXXXXXX" 
+                        placeholder="0591234567" 
                         value="{{ old('phone', Auth::user()->phone) }}"
-                        class="w-full h-12 px-4 rounded-2xl border-2 {{ $errors->has('phone') ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500' }} bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-base font-semibold tracking-wider placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition shadow-sm"
+                        class="w-full h-12 px-3 bg-transparent text-slate-800 dark:text-slate-100 text-base font-semibold tracking-wider placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
                     >
-                    <span class="absolute end-3 text-sm pointer-events-none text-slate-400">
-                        🇵🇸
-                    </span>
                 </div>
                 <p class="text-[11px] text-slate-400 dark:text-slate-500">
                     مطلوب للاتصال المباشر بين السائق والركاب عند بدء الرحلة.
