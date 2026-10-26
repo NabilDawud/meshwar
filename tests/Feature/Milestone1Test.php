@@ -90,29 +90,54 @@ class Milestone1Test extends TestCase
     }
 
     /**
-     * Test user can select a role and is redirected to designated landing.
+     * Test user can select a role and enter phone number which persists to database.
      */
     public function test_user_can_select_role_and_persists_to_database(): void
     {
         $user = User::factory()->create([
             'role' => null,
+            'phone' => null,
         ]);
 
-        // Select driver role
+        // Select driver role with valid Palestinian phone
         $response = $this->actingAs($user)->post('/auth/role-choice', [
             'role' => 'driver',
+            'phone' => '0599123456',
         ]);
 
         $response->assertRedirect(route('driver.dashboard'));
         $this->assertEquals('driver', $user->fresh()->role);
+        $this->assertEquals('0599123456', $user->fresh()->phone);
 
         // Switch to rider role
         $response = $this->actingAs($user)->post('/auth/role-choice', [
             'role' => 'rider',
+            'phone' => '0569876543',
         ]);
 
         $response->assertRedirect(route('rider.home'));
         $this->assertEquals('rider', $user->fresh()->role);
+        $this->assertEquals('0569876543', $user->fresh()->phone);
+    }
+
+    /**
+     * Test role choice validates Palestinian mobile numbers.
+     */
+    public function test_role_choice_requires_valid_palestinian_phone(): void
+    {
+        $user = User::factory()->create([
+            'role' => null,
+            'phone' => null,
+        ]);
+
+        // Invalid phone number
+        $response = $this->actingAs($user)->post('/auth/role-choice', [
+            'role' => 'rider',
+            'phone' => '12345',
+        ]);
+
+        $response->assertSessionHasErrors(['phone']);
+        $this->assertNull($user->fresh()->role);
     }
 
     /**

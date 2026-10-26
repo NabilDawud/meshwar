@@ -12,13 +12,15 @@
                 مرحباً بك، {{ Auth::user()->name }}!
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                اختر نوع حسابك للمتابعة. هذا الاختيار يحدد واجهتك وخصائص التطبيق المخصصة لك.
+                اختر نوع حسابك ورقم هاتفك للمتابعة. هذا الاختيار يحدد واجهتك وخصائص التطبيق المخصصة لك.
             </p>
         </div>
 
         @if ($errors->any())
-            <div class="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-2xl text-xs text-rose-700 dark:text-rose-300">
-                يرجى اختيار أحد الدورين للمتابعة.
+            <div class="mb-4 p-3.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-2xl text-xs text-rose-700 dark:text-rose-300 flex flex-col gap-1">
+                @foreach ($errors->all() as $error)
+                    <div>• {{ $error }}</div>
+                @endforeach
             </div>
         @endif
 
@@ -27,7 +29,7 @@
 
             <!-- Rider Option -->
             <label class="group relative flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 bg-white dark:bg-slate-900/60 cursor-pointer transition active:scale-[0.99] has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50/50 dark:has-[:checked]:bg-teal-950/30">
-                <input type="radio" name="role" value="rider" class="peer sr-only" required>
+                <input type="radio" name="role" value="rider" {{ old('role') === 'rider' ? 'checked' : '' }} class="peer sr-only" required>
                 <div class="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition">
                     📍
                 </div>
@@ -46,7 +48,7 @@
 
             <!-- Driver Option -->
             <label class="group relative flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-400 bg-white dark:bg-slate-900/60 cursor-pointer transition active:scale-[0.99] has-[:checked]:border-amber-600 has-[:checked]:bg-amber-50/50 dark:has-[:checked]:bg-amber-950/30">
-                <input type="radio" name="role" value="driver" class="peer sr-only">
+                <input type="radio" name="role" value="driver" {{ old('role') === 'driver' ? 'checked' : '' }} class="peer sr-only">
                 <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition">
                     🚗
                 </div>
@@ -63,8 +65,36 @@
                 </div>
             </label>
 
-            <button type="submit" class="mt-4 w-full min-h-[48px] bg-teal-600 hover:bg-teal-700 active:scale-[0.98] text-white font-bold rounded-2xl text-sm transition shadow-sm flex items-center justify-center gap-2">
-                <span>تأكيد المتابعة</span>
+            <!-- Phone Number Input Field -->
+            <div class="mt-2 flex flex-col gap-1.5">
+                <label for="phone" class="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                    <span>📱</span>
+                    <span>رقم الجوال (للتواصل وتأكيد الحجز)</span>
+                    <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative flex items-center">
+                    <input 
+                        type="tel" 
+                        name="phone" 
+                        id="phone" 
+                        dir="ltr"
+                        required
+                        inputmode="numeric"
+                        placeholder="059XXXXXXX أو 056XXXXXXX" 
+                        value="{{ old('phone', Auth::user()->phone) }}"
+                        class="w-full h-12 px-4 rounded-2xl border-2 {{ $errors->has('phone') ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500' }} bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-base font-semibold tracking-wider placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition shadow-sm"
+                    >
+                    <span class="absolute end-3 text-sm pointer-events-none text-slate-400">
+                        🇵🇸
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500">
+                    مطلوب للاتصال المباشر بين السائق والركاب عند بدء الرحلة.
+                </p>
+            </div>
+
+            <button type="submit" class="mt-3 w-full min-h-[48px] bg-teal-600 hover:bg-teal-700 active:scale-[0.98] text-white font-bold rounded-2xl text-sm transition shadow-sm flex items-center justify-center gap-2">
+                <span>تأكيد ومتابعة</span>
                 <span>←</span>
             </button>
         </form>

@@ -34,12 +34,18 @@ class RoleChoiceController extends Controller
     {
         $validated = $request->validate([
             'role' => ['required', 'string', 'in:rider,driver'],
+            'phone' => ['required', 'string', 'regex:/^(\+?(970|972)|0)?5[69]\d{7}$/'],
+        ], [
+            'role.required' => 'يرجى اختيار نوع الحساب (سائق أو راكب).',
+            'phone.required' => 'رقم الجوال مطلوب للتواصل وتأكيد الرحلات.',
+            'phone.regex' => 'يرجى إدخال رقم جوال فلسطيني صحيح (مثال: 0599123456 أو 0569123456).',
         ]);
 
         /** @var User $user */
         $user = Auth::user();
         $user->update([
             'role' => $validated['role'],
+            'phone' => $validated['phone'],
         ]);
 
         return $validated['role'] === 'driver'
