@@ -1,0 +1,292 @@
+[
+  {
+    "id": "rafah_crossing",
+    "name_ar": "معبر رفح البري",
+    "name_en": "Rafah Border Crossing",
+    "corridor": "salah_al_din",
+    "municipality": "رفح",
+    "lat": 31.2464,
+    "lng": 34.2541,
+    "type": "terminal"
+  },
+  {
+    "id": "rafah_al_awda",
+    "name_ar": "دوار العودة - وسط رفح",
+    "name_en": "Al-Awda Roundabout, Rafah",
+    "corridor": "salah_al_din",
+    "municipality": "رفح",
+    "lat": 31.2828,
+    "lng": 34.2536,
+    "type": "roundabout"
+  },
+  {
+    "id": "rafah_khirbat_al_adas",
+    "name_ar": "مفترق خربة العدس",
+    "name_en": "Khirbat al-Adas Junction",
+    "corridor": "salah_al_din",
+    "municipality": "رفح",
+    "lat": 31.3052,
+    "lng": 34.2690,
+    "type": "junction"
+  },
+  {
+    "id": "khan_younis_morag",
+    "name_ar": "مفترق موراج",
+    "name_en": "Morag Junction",
+    "corridor": "salah_al_din",
+    "municipality": "خان يونس",
+    "lat": 31.3190,
+    "lng": 34.2810,
+    "type": "junction"
+  },
+  {
+    "id": "khan_younis_bani_suheila",
+    "name_ar": "دوار بني سهيلا",
+    "name_en": "Bani Suheila Roundabout",
+    "corridor": "salah_al_din",
+    "municipality": "خان يونس",
+    "lat": 31.3456,
+    "lng": 34.3182,
+    "type": "roundabout"
+  },
+  {
+    "id": "khan_younis_center_jalal",
+    "name_ar": "شارع جلال - وسط خان يونس",
+    "name_en": "Jalal Street, Khan Younis",
+    "corridor": "cross",
+    "municipality": "خان يونس",
+    "lat": 31.3440,
+    "lng": 34.3030,
+    "type": "transit_hub"
+  },
+  {
+    "id": "khan_younis_al_matahen",
+    "name_ar": "مفترق المطاحن - السطر الشرقي",
+    "name_en": "Al-Matahen Junction",
+    "corridor": "salah_al_din",
+    "municipality": "خان يونس",
+    "lat": 31.3850,
+    "lng": 34.3312,
+    "type": "junction"
+  },
+  {
+    "id": "deir_al_balah_qarara",
+    "name_ar": "مدخل القرارة",
+    "name_en": "Al-Qarara Entrance",
+    "corridor": "salah_al_din",
+    "municipality": "دير البلح",
+    "lat": 31.3980,
+    "lng": 34.3380,
+    "type": "junction"
+  },
+  {
+    "id": "deir_al_balah_al_baraka",
+    "name_ar": "دوار البركة - دير البلح",
+    "name_en": "Al-Baraka Roundabout, Deir al-Balah",
+    "corridor": "salah_al_din",
+    "municipality": "دير البلح",
+    "lat": 31.4170,
+    "lng": 34.3510,
+    "type": "roundabout"
+  },
+  {
+    "id": "deir_al_balah_al_nakheel",
+    "name_ar": "شارع النخيل - وسط دير البلح",
+    "name_en": "Al-Nakheel Street",
+    "corridor": "cross",
+    "municipality": "دير البلح",
+    "lat": 31.4180,
+    "lng": 34.3470,
+    "type": "street"
+  },
+  {
+    "id": "al_zawaida_junction",
+    "name_ar": "مفترق الزوايدة",
+    "name_en": "Al-Zawaida Junction",
+    "corridor": "salah_al_din",
+    "municipality": "الوسطى",
+    "lat": 31.4330,
+    "lng": 34.3720,
+    "type": "junction"
+  },
+  {
+    "id": "al_nuseirat_entrance",
+    "name_ar": "مدخل النصيرات الرئيسي",
+    "name_en": "Al-Nuseirat Main Entrance",
+    "corridor": "salah_al_din",
+    "municipality": "الوسطى",
+    "lat": 31.4480,
+    "lng": 34.3910,
+    "type": "junction"
+  },
+  {
+    "id": "al_bureij_entrance",
+    "name_ar": "مدخل البريج - صلاح الدين",
+    "name_en": "Al-Bureij Entrance",
+    "corridor": "salah_al_din",
+    "municipality": "الوسطى",
+    "lat": 31.4410,
+    "lng": 34.4020,
+    "type": "junction"
+  },
+  {
+    "id": "gaza_netzarim",
+    "name_ar": "مفترق الشهداء (نتساريم)",
+    "name_en": "Al-Shuhada / Netzarim Junction",
+    "corridor": "salah_al_din",
+    "municipality": "غزة",
+    "lat": 31.4650,
+    "lng": 34.4250,
+    "type": "junction"
+  },
+  {
+    "id": "gaza_kuwait_roundabout",
+    "name_ar": "دوار الكويت - جنوب غزة",
+    "name_en": "Kuwait Roundabout, Gaza",
+    "corridor": "salah_al_din",
+    "municipality": "غزة",
+    "lat": 31.4920,
+    "lng": 34.4550,
+    "type": "roundabout"
+  },
+  {
+    "id": "gaza_al_shujaia",
+    "name_ar": "مفترق الشجاعية",
+    "name_en": "Shuja'iyya Junction",
+    "corridor": "salah_al_din",
+    "municipality": "غزة",
+    "lat": 31.5030,
+    "lng": 34.4730,
+    "type": "junction"
+  },
+  {
+    "id": "gaza_palestine_square",
+    "name_ar": "ميدان فلسطين (الساحة)",
+    "name_en": "Palestine Square (Al-Saha)",
+    "corridor": "cross",
+    "municipality": "غزة",
+    "lat": 31.5080,
+    "lng": 34.4630,
+    "type": "transit_hub"
+  },
+  {
+    "id": "gaza_al_saraya",
+    "name_ar": "مفترق السرايا - وسط غزة",
+    "name_en": "Al-Saraya Junction",
+    "corridor": "cross",
+    "municipality": "غزة",
+    "lat": 31.5160,
+    "lng": 34.4520,
+    "type": "junction"
+  },
+  {
+    "id": "gaza_al_jundi",
+    "name_ar": "دوار الجندي المجهول - الرمال",
+    "name_en": "Unknown Soldier Roundabout, Rimal",
+    "corridor": "cross",
+    "municipality": "غزة",
+    "lat": 31.5190,
+    "lng": 34.4470,
+    "type": "roundabout"
+  },
+  {
+    "id": "gaza_al_shifa",
+    "name_ar": "محيط مجمع الشفاء الطبي",
+    "name_en": "Al-Shifa Hospital Area",
+    "corridor": "cross",
+    "municipality": "غزة",
+    "lat": 31.5230,
+    "lng": 34.4430,
+    "type": "landmark"
+  },
+  {
+    "id": "gaza_seaport",
+    "name_ar": "ميناء غزة - شارع الرشيد",
+    "name_en": "Gaza Seaport, Al-Rashid St",
+    "corridor": "al_rashid",
+    "municipality": "غزة",
+    "lat": 31.5270,
+    "lng": 34.4330,
+    "type": "seaport"
+  },
+  {
+    "id": "gaza_al_nabulsi",
+    "name_ar": "دوار النابلسي - شارع الرشيد",
+    "name_en": "Al-Nabulsi Roundabout, Coastal Road",
+    "corridor": "al_rashid",
+    "municipality": "غزة",
+    "lat": 31.4880,
+    "lng": 34.4080,
+    "type": "roundabout"
+  },
+  {
+    "id": "deir_al_balah_beach",
+    "name_ar": "بحر دير البلح - شارع الرشيد",
+    "name_en": "Deir al-Balah Coast",
+    "corridor": "al_rashid",
+    "municipality": "دير البلح",
+    "lat": 31.4120,
+    "lng": 34.3410,
+    "type": "coastal_station"
+  },
+  {
+    "id": "khan_younis_mawasi",
+    "name_ar": "مواصي خان يونس - شارع الرشيد",
+    "name_en": "Mawasi Khan Younis Coastal Road",
+    "corridor": "al_rashid",
+    "municipality": "خان يونس",
+    "lat": 31.3520,
+    "lng": 34.2810,
+    "type": "coastal_station"
+  },
+  {
+    "id": "rafah_tal_al_sultan_coast",
+    "name_ar": "بحر رفح - تل السلطان",
+    "name_en": "Rafah Seacoast, Tal al-Sultan",
+    "corridor": "al_rashid",
+    "municipality": "رفح",
+    "lat": 31.2950,
+    "lng": 34.2250,
+    "type": "coastal_station"
+  },
+  {
+    "id": "north_jabalia_camp",
+    "name_ar": "مخيم جباليا - دوار الترنس",
+    "name_en": "Al-Trans Roundabout, Jabalia Camp",
+    "corridor": "salah_al_din",
+    "municipality": "شمال غزة",
+    "lat": 31.5280,
+    "lng": 34.4950,
+    "type": "roundabout"
+  },
+  {
+    "id": "north_al_falouja",
+    "name_ar": "مفترق الفالوجا - جباليا",
+    "name_en": "Al-Falouja Junction, Jabalia",
+    "corridor": "salah_al_din",
+    "municipality": "شمال غزة",
+    "lat": 31.5380,
+    "lng": 34.4980,
+    "type": "junction"
+  },
+  {
+    "id": "north_beit_lahia",
+    "name_ar": "دوار بيت لاهيا العام",
+    "name_en": "Beit Lahia Center",
+    "corridor": "cross",
+    "municipality": "شمال غزة",
+    "lat": 31.5470,
+    "lng": 34.4970,
+    "type": "roundabout"
+  },
+  {
+    "id": "north_beit_hanoun",
+    "name_ar": "مدخل بيت حانون الرئيسي",
+    "name_en": "Beit Hanoun Entrance",
+    "corridor": "salah_al_din",
+    "municipality": "شمال غزة",
+    "lat": 31.5420,
+    "lng": 34.5360,
+    "type": "junction"
+  }
+]

@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RoleChoiceController;
+use App\Http\Controllers\Driver\DriverRouteController;
+use App\Http\Controllers\Driver\DriverVehicleController;
+use App\Http\Controllers\GazetteerController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,9 +37,40 @@ Route::middleware('auth')->group(function () {
     })->name('rider.home');
 
     Route::get('/driver', function () {
-        return view('driver.dashboard');
+        /** @var User $user */
+        $user = Auth::user();
+        $vehicle = $user->vehicle;
+        $route = $user->driverRoute;
+
+        return view('driver.dashboard', compact('vehicle', 'route'));
     })->name('driver.dashboard');
+
+    Route::get('/driver/vehicle', function () {
+        /** @var User $user */
+        $user = Auth::user();
+        $vehicle = $user->vehicle;
+
+        return view('driver.vehicle', compact('vehicle'));
+    })->name('driver.vehicle');
+
+    Route::get('/driver/route', function () {
+        /** @var User $user */
+        $user = Auth::user();
+        $route = $user->driverRoute;
+
+        return view('driver.route', compact('route'));
+    })->name('driver.route');
+
+    // Driver Vehicle & Route APIs
+    Route::get('/api/driver/vehicle', [DriverVehicleController::class, 'show'])->name('api.driver.vehicle.show');
+    Route::post('/api/driver/vehicle', [DriverVehicleController::class, 'store'])->name('api.driver.vehicle.store');
+    Route::get('/api/driver/route', [DriverRouteController::class, 'show'])->name('api.driver.route.show');
+    Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');
+    Route::post('/api/driver/route/status', [DriverRouteController::class, 'updateStatus'])->name('api.driver.route.status');
 });
+
+// Verified OpenStreetMap Gaza Gazetteer
+Route::get('/api/gazetteer', [GazetteerController::class, 'index'])->name('api.gazetteer');
 
 /*
 |--------------------------------------------------------------------------

@@ -1,14 +1,29 @@
-# Milestone 1: Routes Registry & QA Contract
+# Milestone 1 & 2: Routes Registry & QA Contract
 # Base URL: http://meshwar.test
 
-GET /                   Guest home landing page (Status: 200)
-GET /login              Auth landing with Google Sign In & dev mock (Status: 200)
-GET /auth/google        Socialite redirect to Google OAuth consent screen (Status: 302)
-GET /auth/google/callback Socialite OAuth callback handler (Status: 302)
-GET /auth/google/mock   Dev-only mock login: ?role=driver | ?role=rider | ?role=new (Status: 302)
-GET /auth/role-choice   First-time role selection screen for unassigned users (Status: 200)
-POST /auth/role-choice  Store permanent role selection (driver / rider) (Status: 302)
-GET /rides              Rider landing screen (Status: 200, requires auth)
-GET /driver             Driver landing screen (Status: 200, requires auth)
-GET /api/health         Health check endpoint returning {"ok": true, "commit": "..."} (Status: 200)
-GET /api/qa-login       Zero-credential test login: ?as=driver | ?as=rider (Status: 200, QA_MODE=1)
+# Guest & Auth
+GET /                      Guest home landing page (Status: 200)
+GET /login                 Auth landing with Google Sign In & dev mock (Status: 200)
+GET /auth/google           Socialite redirect to Google OAuth consent screen (Status: 302)
+GET /auth/google/callback  Socialite OAuth callback handler (Status: 302)
+GET /auth/google/mock      Dev-only mock login: ?role=driver | ?role=rider | ?role=new (Status: 302)
+GET /auth/role-choice      First-time role selection screen with phone input (Status: 200)
+POST /auth/role-choice     Store permanent role selection and phone number (Status: 302)
+
+# Rider Endpoints
+GET /rides                 Rider landing screen (Status: 200, requires auth)
+
+# Driver Endpoints (Milestone 2)
+GET /driver                Driver dashboard with operational state machine (Status: 200, requires auth)
+GET /driver/vehicle        Vehicle registration screen with canvas image resizer (Status: 200, requires auth)
+GET /driver/route          Gaza route builder with MapLibre & OSM gazetteer (Status: 200, requires auth)
+GET /api/driver/vehicle    Get authenticated driver's vehicle (Status: 200, requires auth)
+POST /api/driver/vehicle   Save or update driver's vehicle (1:1 constraint, Status: 200, requires auth)
+GET /api/driver/route      Get authenticated driver's route (Status: 200, requires auth)
+POST /api/driver/route     Save or update driver's route and leg fares (Status: 200, requires auth)
+POST /api/driver/route/status Update driver operational status on_route|temporary_route|off_route|skip_work (Status: 200, requires auth)
+
+# Gazetteer & Health
+GET /api/gazetteer         Verified Gaza OpenStreetMap landmark nodes (Status: 200)
+GET /api/health            Health check endpoint returning {"ok": true, "commit": "..."} (Status: 200)
+GET /api/qa-login          Zero-credential test login: ?as=driver | ?as=rider (Status: 200, QA_MODE=1)
