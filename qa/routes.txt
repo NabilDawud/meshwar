@@ -1,0 +1,14 @@
+# Milestone 1: Routes Registry & QA Contract
+# Base URL: http://meshwar.test
+
+GET /                   Guest home landing page (Status: 200)
+GET /login              Auth landing with Google Sign In & dev mock (Status: 200)
+GET /auth/google        Socialite redirect to Google OAuth consent screen (Status: 302)
+GET /auth/google/callback Socialite OAuth callback handler (Status: 302)
+GET /auth/google/mock   Dev-only mock login: ?role=driver | ?role=rider | ?role=new (Status: 302)
+GET /auth/role-choice   First-time role selection screen for unassigned users (Status: 200)
+POST /auth/role-choice  Store permanent role selection (driver / rider) (Status: 302)
+GET /rides              Rider landing screen (Status: 200, requires auth)
+GET /driver             Driver landing screen (Status: 200, requires auth)
+GET /api/health         Health check endpoint returning {"ok": true, "commit": "..."} (Status: 200)
+GET /api/qa-login       Zero-credential test login: ?as=driver | ?as=rider (Status: 200, QA_MODE=1)
