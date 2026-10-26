@@ -12,9 +12,12 @@ Domain-specific rules and constraints for public transit and private rides in th
 1. **Vehicles**:
    - Standard passenger cars (4–7 seats).
    - Buses and minibuses (variable capacity).
-   - **Ajala (أجلة)**: Passenger cart towed by a vehicle; driver-set capacity and distinct driver-taken photos for street identification.
-2. **Driver Routes**:
-   - Each driver registers exactly **ONE main daily route** (ordered stops along Salah al-Din, al-Rashid coastal road, or cross streets) with a start point and first-trip departure time.
+   - **'Ajala (عجلة)**: Passenger cart towed by a vehicle; driver-set capacity and distinct driver-taken photos for street identification.
+2. **Driver Routes & Operational Flexibility**:
+   - Each driver registers a **default daily route** (ordered stops along Salah al-Din, al-Rashid coastal road, or cross streets) with a start point and first-trip time.
+   - **Temporary Route Deviations**: Drivers can temporarily override their default route for specific hours of a day or go "off-route" directly from the dashboard.
+   - **Skip Work / Days Off**: Drivers can toggle specific days off (إجازة); the schedule removes them for those dates.
+   - **Vehicle Maintenance**: Vehicles can be flagged as "Under Maintenance" (تحت الصيانة), automatically pausing availability for bookings and route listings.
 3. **Fares & Currency**:
    - Priced per seat, per leg, in New Israeli Shekels (**ILS / ₪**). Multi-leg journeys may span multiple vehicles.
 4. **Special Requests (مراسلة)**:

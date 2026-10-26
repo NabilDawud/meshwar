@@ -8,10 +8,10 @@ Routes in the Gaza Strip are predominantly linear north-south arteries bisected 
 
 Every fixed route must be an ordered sequence of recognized landmarks/intersections, preserving transit continuity.
 
-## 2. Vehicle Dynamics: The Ajala (أجلة)
+## 2. Vehicle Dynamics: The 'Ajala (عجلة)
 - **Concept**: A modified passenger trailer or open-air cart towed by a motor vehicle. It is currently the primary mass-transit vehicle in several areas.
 - **Capacity**: Manually calibrated by each driver (may vary from 6 to 20+ riders depending on cart size).
-- **Visual Recognition**: Because distinct license plates or livery are often absent or obscured, the driver must upload high-contrast exterior photos of their specific Ajala so passengers can immediately spot it approaching.
+- **Visual Recognition**: Because distinct license plates or livery are often absent or obscured, the driver must upload high-contrast exterior photos of their specific 'Ajala so passengers can immediately spot it approaching.
 
 ## 3. Special Requests / Private Charters (مراسلة)
 - **Rider Flow**:
@@ -25,3 +25,19 @@ Every fixed route must be an ordered sequence of recognized landmarks/intersecti
 - **No Residual Tracking**: As soon as a ride concludes or cancels, purge active coordinate tracking records.
 - **Rider Anonymity**: Browsing riders do not expose phone numbers or personal handles to public feeds.
 - **Explicit Geolocation**: Never silently sample user GPS. Prompt with clear Palestinian Arabic explanation before polling `navigator.geolocation`.
+
+## 5. Driver Availability & Fleet State Machine
+- **Default Route vs Temporary Override**:
+  - The driver stores a master daily route template (e.g., Rafah to Gaza City via Salah al-Din).
+  - The driver dashboard provides a simple one-tap operational control:
+    - **On Default Route** (على الخط المعتاد): Standard daily schedule active.
+    - **Temporary Custom Route** (مسار مؤقت): Allows selecting an alternate stop sequence or time window without overwriting the master template.
+    - **Off-Route / On Errand** (خارج الخط حالياً): Temporarily hides the vehicle from public transit searches for a selected number of hours.
+- **Days Off & Schedule Skipping**:
+  - Drivers can mark specific days as off (يوم إجازة / معطل اليوم).
+  - The booking and schedule listing engine automatically hides the driver for those selected dates.
+- **Vehicle Maintenance Status**:
+  - Vehicles maintain an explicit status: `active` | `maintenance` | `inactive`.
+  - When a vehicle is marked `maintenance` (تحت الصيانة):
+    - Automatically pauses all active route listings and prevents accepting new seat bookings or charter offers.
+    - Driver dashboard displays an active maintenance banner with a single-tap "Mark Ready for Service" toggle (جاهز للعمل).
