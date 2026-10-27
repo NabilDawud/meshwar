@@ -78,6 +78,10 @@
 
         @auth
             @if(Auth::user()->role === 'driver')
+                <a href="{{ route('driver.offers') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('driver.offers') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
+                    <span class="text-lg">💼</span>
+                    <span>الطلبات</span>
+                </a>
                 <a href="{{ route('driver.manifest') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('driver.manifest') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
                     <span class="text-lg">📋</span>
                     <span>البيان</span>
@@ -87,6 +91,10 @@
                     <span>لوحة السائق</span>
                 </a>
             @else
+                <a href="{{ route('rides.requests') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('rides.requests*') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
+                    <span class="text-lg">🚕</span>
+                    <span>مشوار خاص</span>
+                </a>
                 <a href="{{ route('rider.bookings') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('rider.bookings') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
                     <span class="text-lg">🎟️</span>
                     <span>حجوزاتي</span>

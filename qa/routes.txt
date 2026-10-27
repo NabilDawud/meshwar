@@ -44,6 +44,19 @@ POST /api/location-shares/{id}/respond Rider explicit consent (yes/no) to share 
 POST /api/location-shares/{id}/update Rider periodic GPS coordinates update while sharing (Status: 200, requires auth)
 POST /api/location-shares/{id}/end Terminate live location sharing and purge coordinates (Status: 200, requires auth)
 
+# Special Requests (مراسلة), Offers & Direct Chat (Milestone 6)
+GET /requests              Rider special requests view & creation form (Status: 200, requires auth)
+GET /requests/{id}         Side-by-side driver offers comparison with vehicle photos & tap-to-call (Status: 200, requires auth)
+GET /driver/offers         Driver opportunities board for open private requests (Status: 200, requires auth)
+GET /chat/{offer_id}       Direct chat thread between rider and bidding driver (Status: 200, requires auth)
+GET /api/requests          List user special requests / open driver requests (Status: 200, requires auth)
+POST /api/requests         Create private charter request with offline outbox support (Status: 201, requires auth)
+GET /api/requests/{id}     Get request details with side-by-side driver offers (Status: 200, requires auth)
+POST /api/requests/{id}/offers Driver submits priced offer in ILS (Status: 201, requires auth)
+POST /api/requests/{id}/offers/{offerId}/accept Rider accepts driver offer, closing request and unlocking rider phone (Status: 200, requires auth)
+GET /api/chat/{offer_id}   Fetch chat messages thread (Status: 200, requires auth)
+POST /api/chat/{offer_id}  Send chat message with offline outbox support (Status: 201, requires auth)
+
 # Gazetteer & Health
 GET /api/gazetteer         Verified Gaza OpenStreetMap landmark nodes (Status: 200)
 GET /api/health            Health check endpoint returning {"ok": true, "commit": "..."} (Status: 200)
