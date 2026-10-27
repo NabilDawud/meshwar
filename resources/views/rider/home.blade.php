@@ -9,6 +9,23 @@
 
 @section('content')
 <div class="flex-1 flex flex-col gap-3 p-3 sm:p-4" x-data="riderHome()">
+    @auth
+        @if(Auth::user()->role === 'driver')
+            <div class="bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-slate-800 dark:to-slate-800/80 border border-teal-200 dark:border-teal-800 p-3.5 rounded-3xl flex items-center justify-between text-xs shadow-sm">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">👨‍✈️</span>
+                    <div>
+                        <span class="font-bold text-slate-800 dark:text-slate-100 block">أنت مسجل حالياً في وضع السائق</span>
+                        <span class="text-[11px] text-slate-500">الخريطة معروضة كمرجع لحركة الخطوط. لإدارة رحلتك وركابك تفضل إلى لوحة القيادة.</span>
+                    </div>
+                </div>
+                <a href="{{ route('driver.dashboard') }}" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition shrink-0">
+                    لوحة السائق ➔
+                </a>
+            </div>
+        @endif
+    @endauth
+
     <!-- Top Search & Filter Bar -->
     <div class="bg-white dark:bg-slate-800 rounded-3xl p-3 sm:p-4 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-2.5">
         <div class="flex items-center justify-between">
@@ -157,13 +174,19 @@
                             المقاعد الشاغرة: <span class="text-teal-600 dark:text-teal-400 font-black" x-text="vehicle.free_seats"></span>
                         </span>
                         @auth
-                            <button 
-                                @click.stop="bookSeat(vehicle)" 
-                                :disabled="vehicle.free_seats <= 0"
-                                class="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
-                            >
-                                احجز مقعدك الآن ➔
-                            </button>
+                            @if(Auth::user()->role === 'driver')
+                                <a href="{{ route('driver.dashboard') }}" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-teal-700 dark:text-teal-300 font-bold text-xs rounded-xl shadow-sm transition">
+                                    لوحة السائق 🚗
+                                </a>
+                            @else
+                                <button 
+                                    @click.stop="bookSeat(vehicle)" 
+                                    :disabled="vehicle.free_seats <= 0"
+                                    class="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+                                >
+                                    احجز مقعدك الآن ➔
+                                </button>
+                            @endif
                         @else
                             <a href="{{ route('login') }}" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
                                 سجل لحجز مقعد ➔

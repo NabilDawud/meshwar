@@ -24,6 +24,13 @@ class BookingController extends Controller
     {
         $user = Auth::user();
 
+        if ($user->role === 'driver') {
+            return response()->json([
+                'ok' => false,
+                'error' => 'حساب السائق مخصص لإدارة الرحلات واستقبال الركاب، ولا يمكن حجز مقاعد كراكب بنفس الحساب.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'route_id' => ['required', 'exists:driver_routes,id'],
             'seats' => ['nullable', 'integer', 'min:1', 'max:10'],
