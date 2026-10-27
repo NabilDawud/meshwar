@@ -7,6 +7,7 @@ use App\Models\ChatMessage;
 use App\Models\DriverRoute;
 use App\Models\SpecialOffer;
 use App\Models\SpecialRequest;
+use App\Models\TripRating;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
@@ -233,6 +234,94 @@ class DatabaseSeeder extends Seeder
                 'sender_id' => $rider->id,
                 'message' => 'تمام ممتاز، شكراً جزيلاً لك.',
                 'created_at' => now()->subMinutes(5),
+            ]
+        );
+
+        // 9. Seed Milestone 7: Completed Transit Booking with 5-Star Rating
+        $completedBooking = Booking::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-booking-completed-1'],
+            [
+                'rider_id' => $rider->id,
+                'route_id' => $route->id,
+                'seats' => 2,
+                'pickup_stop' => 'دوار العودة - وسط رفح',
+                'dropoff_stop' => 'دوار بني سهيلا',
+                'fare_ils' => 10.00,
+                'status' => 'completed',
+                'created_at' => now()->subDays(2),
+                'updated_at' => now()->subDays(2),
+            ]
+        );
+
+        TripRating::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-rating-1'],
+            [
+                'rider_id' => $rider->id,
+                'driver_id' => $driver1->id,
+                'booking_id' => $completedBooking->id,
+                'rating' => 5,
+                'comment' => 'سائق ممتاز وملتزم بالموعد والسيارة نظيفة جداً',
+                'created_at' => now()->subDays(2),
+            ]
+        );
+
+        // 10. Seed Milestone 7: Completed Special Charter Trip with 4-Star Rating
+        $completedSpecial = SpecialRequest::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-special-completed-1'],
+            [
+                'rider_id' => $rider->id,
+                'origin_name' => 'دوار النجمة - رفح',
+                'destination_name' => 'دوار الشهداء - خان يونس',
+                'departure_date' => now()->subDay()->format('Y-m-d'),
+                'departure_window' => '10:00 صباحاً',
+                'seats_needed' => 2,
+                'notes' => 'مشوار عائلي سريع',
+                'status' => 'completed',
+                'created_at' => now()->subDay(),
+                'updated_at' => now()->subDay(),
+            ]
+        );
+
+        $completedSpecialOffer = SpecialOffer::updateOrCreate(
+            [
+                'request_id' => $completedSpecial->id,
+                'driver_id' => $driver2->id,
+            ],
+            [
+                'price_ils' => 45.00,
+                'notes' => 'سيارة خاصة مكيفة وجاهز فوراً',
+                'status' => 'accepted',
+                'client_mutation_id' => 'seed-mut-special-off-completed-1',
+            ]
+        );
+
+        $completedSpecial->update(['accepted_offer_id' => $completedSpecialOffer->id]);
+
+        TripRating::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-rating-2'],
+            [
+                'rider_id' => $rider->id,
+                'driver_id' => $driver2->id,
+                'special_request_id' => $completedSpecial->id,
+                'rating' => 4,
+                'comment' => 'خدمة ممتازة وسائق مهذب وسريع في الوصول',
+                'created_at' => now()->subDay(),
+            ]
+        );
+
+        // 11. Seed Milestone 7: Completed Booking without a Rating (Ready to be rated by rider)
+        Booking::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-booking-completed-unrated'],
+            [
+                'rider_id' => $rider->id,
+                'route_id' => $route->id,
+                'seats' => 1,
+                'pickup_stop' => 'دوار البركة - دير البلح',
+                'dropoff_stop' => 'ميدان فلسطين (الساحة)',
+                'fare_ils' => 15.00,
+                'status' => 'completed',
+                'created_at' => now()->subHours(3),
+                'updated_at' => now()->subHours(2),
             ]
         );
     }

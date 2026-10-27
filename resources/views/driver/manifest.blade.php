@@ -3,7 +3,7 @@
 @section('title', 'بيان ركاب الرحلة - مشوار')
 
 @section('content')
-<div class="p-4 flex flex-col gap-4 max-w-lg mx-auto" x-data="driverManifestState()" x-init="fetchManifest()">
+<div class="p-4 flex flex-col gap-4 max-w-lg mx-auto" x-data="driverManifestState()" x-init="init()">
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
@@ -75,6 +75,7 @@
                     <span class="text-xs px-2.5 py-1 rounded-full font-bold"
                         :class="{
                             'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300': r.status === 'confirmed',
+                            'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300': r.status === 'boarded',
                             'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300': r.status === 'cancelled_by_driver' || r.status === 'cancelled_by_rider',
                             'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200': r.status === 'completed'
                         }"
@@ -100,38 +101,70 @@
                 <!-- Pre-Trip Confirmation Controls (Confirm Boarding / Cancel Unready) -->
                 <template x-if="r.status === 'confirmed'">
                     <div class="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
-                        <button @click="confirmRider(r.id)" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition">
-                            ✓ تأكيد الصعود
+                        <button @click="confirmRider(r.id)" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5">
+                            <span>✓</span>
+                            <span>تأكيد الصعود للمركبة</span>
                         </button>
-                        <button @click="cancelRider(r.id)" class="py-2 px-3 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold text-xs rounded-xl transition">
+                        <button @click="cancelRider(r.id)" class="py-2.5 px-3 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold text-xs rounded-xl transition">
                             ✕ إلغاء لعدم الجاهزية
                         </button>
                     </div>
                 </template>
 
-                <!-- Live Location Share Status & Actions -->
-                <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-1.5">
-                        <span>📍</span>
-                        <span class="font-bold">الموقع المباشر:</span>
-                        <span class="text-slate-500" x-text="r.location_share ? r.location_share.status_arabic : 'غير مطلوب'"></span>
-                    </div>
-
-                    <!-- Request Location Button -->
-                    <template x-if="r.status === 'confirmed' && (!r.location_share || r.location_share.status === 'ended' || r.location_share.status === 'rejected')">
-                        <button @click="requestLocation(r.id)" class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold text-[11px] rounded-lg transition">
-                            طلب موقع الراكب
+                <!-- Boarded State Controls (Complete Trip) -->
+                <template x-if="r.status === 'boarded'">
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-xs">
+                        <div class="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200 font-bold">
+                            <span>✓</span>
+                            <span>الراكب على متن المركبة</span>
+                        </div>
+                        <button @click="completeBooking(r.id)" class="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1">
+                            <span>🏁</span>
+                            <span>تأكيد النزول والوصول</span>
                         </button>
-                    </template>
+                    </div>
+                </template>
 
-                    <!-- Active Location View -->
-                    <template x-if="r.location_share && r.location_share.is_active && r.location_share.last_latitude">
-                        <span class="text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-teal-500 animate-ping"></span>
-                            موقع الراكب متصل
-                        </span>
-                    </template>
-                </div>
+                <!-- Completed State -->
+                <template x-if="r.status === 'completed'">
+                    <div class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold text-center">
+                        ✓ اكتملت الرحلة وتم تأكيد الوصول بنجاح
+                    </div>
+                </template>
+
+                <!-- Live Location Share Status & Actions (Only when confirmed and before boarding) -->
+                <template x-if="r.status === 'confirmed'">
+                    <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span>📍</span>
+                            <span class="font-bold">الموقع المباشر:</span>
+                            <span class="text-slate-500" x-text="r.location_share ? r.location_share.status_arabic : 'غير مطلوب'"></span>
+                        </div>
+
+                        <!-- Request Location Button -->
+                        <template x-if="!r.location_share || r.location_share.status === 'ended' || r.location_share.status === 'rejected'">
+                            <button @click="requestLocation(r.id)" class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold text-[11px] rounded-lg transition">
+                                طلب موقع الراكب
+                            </button>
+                        </template>
+
+                        <!-- Waiting for Approval -->
+                        <template x-if="r.location_share && r.location_share.status === 'requested'">
+                            <span class="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 text-[11px]">
+                                <span class="animate-pulse">⏳</span>
+                                <span>بانتظار موافقة الراكب</span>
+                            </span>
+                        </template>
+
+                        <!-- Active Location View -->
+                        <template x-if="r.location_share && r.location_share.is_active">
+                            <span class="text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1.5 text-[11px]">
+                                <span class="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping"></span>
+                                <span x-text="r.location_share.last_latitude ? ('موقع الراكب متصل (' + r.location_share.last_latitude + ', ' + r.location_share.last_longitude + ')') : 'وافق الراكب على المشاركة 📍'"></span>
+                            </span>
+                        </template>
+                    </div>
+                </template>
             </div>
         </template>
     </div>
@@ -148,9 +181,21 @@ function driverManifestState() {
         riders: [],
         loading: false,
         toastMessage: null,
+        pollInterval: null,
 
-        async fetchManifest() {
-            this.loading = true;
+        init() {
+            this.fetchManifest();
+
+            // Poll every 5 seconds so rider responses and location updates reflect live
+            this.pollInterval = setInterval(() => {
+                if (navigator.onLine && !this.loading) {
+                    this.fetchManifest(false);
+                }
+            }, 5000);
+        },
+
+        async fetchManifest(showLoader = true) {
+            if (showLoader) this.loading = true;
             try {
                 const res = await fetch('{{ route('api.driver.manifest') }}');
                 const data = await res.json();
@@ -180,11 +225,33 @@ function driverManifestState() {
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    this.toastMessage = data.message;
+                    this.toastMessage = '✓ تم تأكيد صعود الراكب للمركبة بنجاح!';
                     this.fetchManifest();
                 }
             } catch (err) {
                 console.error('Failed to confirm rider', err);
+            }
+        },
+
+        async completeBooking(bookingId) {
+            if (!confirm('هل تأكد وصول الراكب إلى وجهته المحددة؟')) return;
+
+            try {
+                const res = await fetch(`/api/bookings/${bookingId}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.toastMessage = '🏁 تم إنهاء الرحلة وتأكيد الوصول بنجاح!';
+                    this.fetchManifest();
+                }
+            } catch (err) {
+                console.error('Failed to complete booking', err);
             }
         },
 
@@ -226,7 +293,7 @@ function driverManifestState() {
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    this.toastMessage = data.message;
+                    this.toastMessage = '📍 تم إرسال طلب مشاركة الموقع للراكب بنجاح';
                     this.fetchManifest();
                 }
             } catch (err) {

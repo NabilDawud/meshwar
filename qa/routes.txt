@@ -57,6 +57,15 @@ POST /api/requests/{id}/offers/{offerId}/accept Rider accepts driver offer, clos
 GET /api/chat/{offer_id}   Fetch chat messages thread (Status: 200, requires auth)
 POST /api/chat/{offer_id}  Send chat message with offline outbox support (Status: 201, requires auth)
 
+# Milestone 7: Trip History & 1-5 Star Ratings
+GET /trips                     Rider completed trip history with 1-5 star ratings (Status: 200, requires auth)
+GET /driver/history            Driver completed trips history, total earnings, and rating stats (Status: 200, requires auth)
+GET /api/rider/history         List completed trips for rider with ratings (Status: 200, requires auth)
+GET /api/driver/history        List completed trips for driver with earnings and review summaries (Status: 200, requires auth)
+POST /api/trips/rate           Submit 1-5 star rating and feedback for completed trip (Status: 201, requires auth)
+POST /api/bookings/{id}/complete Complete a transit booking upon arrival (Status: 200, requires auth)
+POST /api/requests/{id}/complete Complete a special charter trip upon arrival (Status: 200, requires auth)
+
 # Gazetteer & Health
 GET /api/gazetteer         Verified Gaza OpenStreetMap landmark nodes (Status: 200)
 GET /api/health            Health check endpoint returning {"ok": true, "commit": "..."} (Status: 200)

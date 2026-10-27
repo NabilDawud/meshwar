@@ -59,26 +59,35 @@ class Booking extends Model
     }
 
     /**
+     * Rating submitted for this completed booking.
+     */
+    public function rating(): HasOne
+    {
+        return $this->hasOne(TripRating::class, 'booking_id');
+    }
+
+    /**
      * Human-readable Arabic label for booking status.
      */
     public function getStatusArabicAttribute(): string
     {
         return match ($this->status) {
-            'confirmed' => 'مؤكد',
+            'confirmed' => 'مؤكد (بانتظار الصعود)',
+            'boarded' => 'تم الصعود للمركبة',
             'cancelled_by_driver' => 'ملغي من السائق لعدم الجاهزية',
             'cancelled_by_rider' => 'ملغي من الراكب',
-            'completed' => 'مكتمل',
+            'completed' => 'مكتمل (تم الوصول)',
             default => 'غير محدد',
         };
     }
 
     /**
      * Privacy Policy Enforcement:
-     * Rider's phone number is revealed to the driver ONLY if the booking is confirmed.
+     * Rider's phone number is revealed to the driver ONLY if the booking is confirmed, boarded, or completed.
      */
     public function getRiderPhoneForDriverAttribute(): ?string
     {
-        if ($this->status !== 'confirmed') {
+        if (! in_array($this->status, ['confirmed', 'boarded', 'completed'])) {
             return null;
         }
 
@@ -87,11 +96,11 @@ class Booking extends Model
 
     /**
      * Privacy Policy Enforcement:
-     * Driver's phone number is revealed to the rider ONLY if the booking is confirmed.
+     * Driver's phone number is revealed to the rider ONLY if the booking is confirmed, boarded, or completed.
      */
     public function getDriverPhoneForRiderAttribute(): ?string
     {
-        if ($this->status !== 'confirmed') {
+        if (! in_array($this->status, ['confirmed', 'boarded', 'completed'])) {
             return null;
         }
 

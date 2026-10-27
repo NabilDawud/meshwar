@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('pickup_stop', 150)->nullable();
             $table->string('dropoff_stop', 150)->nullable();
             $table->decimal('fare_ils', 8, 2)->nullable();
-            $table->enum('status', ['confirmed', 'cancelled_by_driver', 'cancelled_by_rider', 'completed'])->default('confirmed');
+            $table->enum('status', ['confirmed', 'boarded', 'cancelled_by_driver', 'cancelled_by_rider', 'completed'])->default('confirmed');
             $table->text('cancellation_reason')->nullable();
             $table->string('client_mutation_id', 64)->nullable()->unique();
             $table->timestamps();

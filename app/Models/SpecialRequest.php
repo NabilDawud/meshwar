@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SpecialRequest extends Model
 {
@@ -50,11 +51,17 @@ class SpecialRequest extends Model
         return $this->belongsTo(SpecialOffer::class, 'accepted_offer_id');
     }
 
+    public function rating(): HasOne
+    {
+        return $this->hasOne(TripRating::class, 'special_request_id');
+    }
+
     public function getStatusArabicAttribute(): string
     {
         return match ($this->status) {
             'open' => 'مفتوح لتلقي العروض',
             'accepted' => 'تم قبول عرض وتأكيد المشوار',
+            'completed' => 'مكتمل (تم الوصول)',
             'cancelled' => 'ملغي',
             default => 'غير محدد',
         };

@@ -12,6 +12,8 @@ use App\Http\Controllers\Rides\ActiveVehicleController;
 use App\Http\Controllers\Rides\TripPlannerController;
 use App\Http\Controllers\SpecialOfferController;
 use App\Http\Controllers\SpecialRequestController;
+use App\Http\Controllers\TripHistoryController;
+use App\Http\Controllers\TripRatingController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -122,6 +124,21 @@ Route::middleware('auth')->group(function () {
     // Chat APIs
     Route::get('/api/chat/{offer_id}', [ChatController::class, 'getMessages'])->name('api.chat.messages');
     Route::post('/api/chat/{offer_id}', [ChatController::class, 'sendMessage'])->name('api.chat.send');
+
+    // Milestone 7: Trip History for Both Roles & 1-5 Star Ratings
+    Route::get('/trips', function () {
+        return view('rides.history');
+    })->name('rides.history');
+
+    Route::get('/driver/history', function () {
+        return view('driver.history');
+    })->name('driver.history');
+
+    Route::get('/api/rider/history', [TripHistoryController::class, 'riderHistory'])->name('api.rider.history');
+    Route::get('/api/driver/history', [TripHistoryController::class, 'driverHistory'])->name('api.driver.history');
+    Route::post('/api/trips/rate', [TripRatingController::class, 'store'])->name('api.trips.rate');
+    Route::post('/api/bookings/{id}/complete', [BookingController::class, 'completeBooking'])->name('api.bookings.complete');
+    Route::post('/api/requests/{id}/complete', [SpecialRequestController::class, 'complete'])->name('api.requests.complete');
 });
 
 // Verified OpenStreetMap Gaza Gazetteer
