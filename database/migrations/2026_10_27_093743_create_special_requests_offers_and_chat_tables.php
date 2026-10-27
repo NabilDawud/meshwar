@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('departure_window', 100);
             $table->unsignedSmallInteger('seats_needed')->default(1);
             $table->text('notes')->nullable();
-            $table->enum('status', ['open', 'accepted', 'cancelled'])->default('open');
+            $table->enum('status', ['open', 'accepted', 'completed', 'cancelled'])->default('open');
             $table->unsignedBigInteger('accepted_offer_id')->nullable();
             $table->string('client_mutation_id', 64)->nullable()->unique();
             $table->timestamps();

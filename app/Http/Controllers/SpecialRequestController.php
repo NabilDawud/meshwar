@@ -241,6 +241,39 @@ class SpecialRequestController extends Controller
     }
 
     /**
+     * Mark a special charter trip as completed after arrival.
+     */
+    public function complete(int $id): JsonResponse
+    {
+        $user = Auth::user();
+
+        /** @var SpecialRequest $specialRequest */
+        $specialRequest = SpecialRequest::with(['acceptedOffer'])->findOrFail($id);
+
+        $driverId = $specialRequest->acceptedOffer?->driver_id;
+
+        if ($specialRequest->rider_id !== $user->id && $driverId !== $user->id) {
+            return response()->json(['error' => 'غير مصرح لك بإنهاء هذا المشوار'], 403);
+        }
+
+        if ($specialRequest->status !== 'accepted') {
+            return response()->json(['error' => 'لا يمكن إنهاء مشوار غير مؤكد'], 422);
+        }
+
+        $specialRequest->update([
+            'status' => 'completed',
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم إنهاء المشوار الخاص وتأكيد الوصول بنجاح',
+            'request_id' => $specialRequest->id,
+            'status' => 'completed',
+            'status_arabic' => 'مكتمل (تم الوصول)',
+        ]);
+    }
+
+    /**
      * Format request for rider view with full side-by-side comparison of driver offers.
      *
      * @return array<string, mixed>

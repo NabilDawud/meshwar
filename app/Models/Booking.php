@@ -59,6 +59,14 @@ class Booking extends Model
     }
 
     /**
+     * Rating submitted for this completed booking.
+     */
+    public function rating(): HasOne
+    {
+        return $this->hasOne(TripRating::class, 'booking_id');
+    }
+
+    /**
      * Human-readable Arabic label for booking status.
      */
     public function getStatusArabicAttribute(): string

@@ -44,6 +44,40 @@ class User extends Authenticatable
     }
 
     /**
+     * Get trip ratings received by this driver.
+     */
+    public function ratingsReceived(): HasMany
+    {
+        return $this->hasMany(TripRating::class, 'driver_id');
+    }
+
+    /**
+     * Get trip ratings given by this rider.
+     */
+    public function ratingsGiven(): HasMany
+    {
+        return $this->hasMany(TripRating::class, 'rider_id');
+    }
+
+    /**
+     * Dynamic average 1-5 rating for driver based on completed trip ratings.
+     */
+    public function getAverageRatingAttribute(): float
+    {
+        $avg = $this->ratingsReceived()->avg('rating');
+
+        return $avg !== null ? round((float) $avg, 1) : 4.9;
+    }
+
+    /**
+     * Total number of reviews received by this driver.
+     */
+    public function getRatingsCountAttribute(): int
+    {
+        return $this->ratingsReceived()->count();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

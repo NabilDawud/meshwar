@@ -249,6 +249,41 @@ class BookingController extends Controller
     }
 
     /**
+     * Mark a booking as completed after reaching destination.
+     */
+    public function completeBooking(int $id): JsonResponse
+    {
+        $user = Auth::user();
+
+        /** @var Booking $booking */
+        $booking = Booking::with('route')->findOrFail($id);
+
+        if ($booking->route->driver_id !== $user->id && $booking->rider_id !== $user->id) {
+            return response()->json(['error' => 'غير مصرح لك بإنهاء هذا الحجز'], 403);
+        }
+
+        $booking->update([
+            'status' => 'completed',
+        ]);
+
+        if ($booking->locationShare) {
+            $booking->locationShare->update([
+                'status' => 'ended',
+                'last_latitude' => null,
+                'last_longitude' => null,
+            ]);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم إنهاء الرحلة وتأكيد الوصول بنجاح',
+            'booking_id' => $booking->id,
+            'status' => 'completed',
+            'status_arabic' => 'مكتمل',
+        ]);
+    }
+
+    /**
      * Format a booking payload for the rider, applying strict privacy gating.
      *
      * @return array<string, mixed>
