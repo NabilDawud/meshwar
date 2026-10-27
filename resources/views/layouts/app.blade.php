@@ -71,6 +71,11 @@
             <span>الرئيسية</span>
         </a>
 
+        <a href="{{ route('rides.plan') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('rides.plan') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
+            <span class="text-lg">🧭</span>
+            <span>المخطط</span>
+        </a>
+
         @auth
             @if(Auth::user()->role === 'driver')
                 <a href="{{ route('driver.dashboard') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('driver.*') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">

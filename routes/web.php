@@ -6,6 +6,7 @@ use App\Http\Controllers\Driver\DriverRouteController;
 use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
 use App\Http\Controllers\Rides\ActiveVehicleController;
+use App\Http\Controllers\Rides\TripPlannerController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,6 +76,13 @@ Route::get('/api/gazetteer', [GazetteerController::class, 'index'])->name('api.g
 
 // Active Transit Vehicles & Search (Open to Guests and Riders)
 Route::get('/api/rides/active-vehicles', [ActiveVehicleController::class, 'index'])->name('api.rides.active');
+
+// Trip Planner View & Offline Graph APIs (Open to Guests and Riders)
+Route::get('/plan', function () {
+    return view('rides.plan');
+})->name('rides.plan');
+Route::get('/api/rides/plan', [TripPlannerController::class, 'plan'])->name('api.rides.plan');
+Route::get('/api/routes/graph', [TripPlannerController::class, 'graph'])->name('api.routes.graph');
 
 /*
 |--------------------------------------------------------------------------

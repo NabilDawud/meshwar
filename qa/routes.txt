@@ -1,9 +1,13 @@
-# Milestone 1, 2 & 3: Routes Registry & QA Contract
+# Milestone 1, 2, 3 & 4: Routes Registry & QA Contract
 # Base URL: http://meshwar.test
 
-# Rider & Guest Endpoints (Milestone 3)
+# Rider, Guest & Trip Planner Endpoints (Milestone 3 & 4)
 GET /                      Rider Home with MapLibre active vehicles map & search (Guest accessible, Status: 200)
 GET /rides                 Rider Home screen (Guest & Rider accessible, Status: 200)
+GET /plan                  Trip Planner web view: direct & 1-transfer routes, total fares, wait times (Status: 200)
+GET /api/rides/plan        Trip planner graph search API: ?from=...&to=...&time=... (Status: 200, < 10 KB)
+GET /api/routes/graph      Corridor network graph for offline browser pathfinding (Status: 200, < 10 KB)
+GET /js/offline-planner.js Client-side offline graph pathfinding script (Status: 200)
 GET /api/rides/active-vehicles Active vehicles list with free seats, photo, last position & age (Status: 200, < 10 KB budget)
 GET /sw.js                 PWA Service Worker for offline map tile caching (Status: 200)
 GET /manifest.json         PWA Web App Manifest (Status: 200)
@@ -31,3 +35,6 @@ POST /api/driver/position  Broadcast live GPS position during active trip (Statu
 GET /api/gazetteer         Verified Gaza OpenStreetMap landmark nodes (Status: 200)
 GET /api/health            Health check endpoint returning {"ok": true, "commit": "..."} (Status: 200)
 GET /api/qa-login          Zero-credential test login: ?as=driver | ?as=rider (Status: 200, QA_MODE=1)
+
+# Console Commands
+meshwar:plan-trip {from} {to} [--time=] CLI corridor pathfinding check
