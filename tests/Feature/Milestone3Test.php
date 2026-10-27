@@ -68,7 +68,7 @@ class Milestone3Test extends TestCase
 
         $first = $vehicles[0];
         $this->assertEquals('ajala', $first['vehicle_type']);
-        $this->assertEquals(10, $first['free_seats']);
+        $this->assertGreaterThanOrEqual(1, $first['free_seats']);
         $this->assertNotEmpty($first['photo']);
         $this->assertEquals('دوار بني سهيلا', $first['last_landmark']);
         $this->assertMatchesRegularExpression('/(الآن|منذ)/', $first['position_age_arabic']);

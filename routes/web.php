@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RoleChoiceController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Driver\DriverRouteController;
 use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
+use App\Http\Controllers\LocationShareController;
 use App\Http\Controllers\Rides\ActiveVehicleController;
 use App\Http\Controllers\Rides\TripPlannerController;
 use App\Models\User;
@@ -69,6 +71,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');
     Route::post('/api/driver/route/status', [DriverRouteController::class, 'updateStatus'])->name('api.driver.route.status');
     Route::post('/api/driver/position', [DriverRouteController::class, 'updatePosition'])->name('api.driver.position');
+
+    // Pre-Trip Driver Manifest View & APIs
+    Route::get('/driver/manifest', function () {
+        return view('driver.manifest');
+    })->name('driver.manifest');
+    Route::get('/api/driver/manifest', [BookingController::class, 'driverManifest'])->name('api.driver.manifest');
+    Route::post('/api/driver/bookings/{id}/cancel', [BookingController::class, 'cancelByDriver'])->name('api.driver.bookings.cancel');
+    Route::post('/api/driver/bookings/{id}/confirm', [BookingController::class, 'confirmByDriver'])->name('api.driver.bookings.confirm');
+
+    // Rider Bookings View & APIs
+    Route::get('/bookings', function () {
+        return view('rider.bookings');
+    })->name('rider.bookings');
+    Route::get('/api/rider/bookings', [BookingController::class, 'riderBookings'])->name('api.rider.bookings');
+    Route::post('/api/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
+
+    // Live Location Sharing APIs
+    Route::post('/api/location-shares/request', [LocationShareController::class, 'requestShare'])->name('api.location.request');
+    Route::post('/api/location-shares/{id}/respond', [LocationShareController::class, 'respond'])->name('api.location.respond');
+    Route::post('/api/location-shares/{id}/update', [LocationShareController::class, 'updatePosition'])->name('api.location.update');
+    Route::post('/api/location-shares/{id}/end', [LocationShareController::class, 'end'])->name('api.location.end');
 });
 
 // Verified OpenStreetMap Gaza Gazetteer

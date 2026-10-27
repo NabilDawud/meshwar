@@ -78,20 +78,24 @@
 
         @auth
             @if(Auth::user()->role === 'driver')
-                <a href="{{ route('driver.dashboard') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('driver.*') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
+                <a href="{{ route('driver.manifest') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('driver.manifest') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
+                    <span class="text-lg">📋</span>
+                    <span>البيان</span>
+                </a>
+                <a href="{{ route('driver.dashboard') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('driver.dashboard') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
                     <span class="text-lg">🚗</span>
                     <span>لوحة السائق</span>
                 </a>
             @else
-                <a href="{{ route('rider.home') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('rider.*') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
-                    <span class="text-lg">📍</span>
-                    <span>المركبات</span>
+                <a href="{{ route('rider.bookings') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('rider.bookings') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
+                    <span class="text-lg">🎟️</span>
+                    <span>حجوزاتي</span>
                 </a>
             @endif
         @else
             <a href="{{ route('login') }}" class="flex flex-col items-center justify-center text-xs gap-1 {{ request()->routeIs('login') ? 'text-teal-600 dark:text-teal-400 font-bold' : 'text-slate-500 dark:text-slate-400' }}">
                 <span class="text-lg">👤</span>
-                <span>حسابي</span>
+                <span>تسجيل الدخول</span>
             </a>
         @endauth
     </nav>
