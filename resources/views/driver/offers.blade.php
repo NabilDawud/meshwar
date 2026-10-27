@@ -18,6 +18,28 @@
         </button>
     </div>
 
+    <!-- Prominent Notification Banner for Accepted Offers -->
+    <template x-if="acceptedJobsCount > 0">
+        <div class="p-4 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md flex flex-col gap-2.5 transition">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl animate-bounce">🎉</span>
+                    <span class="font-black text-sm">تم قبول عرضك لمشوار خاص!</span>
+                </div>
+                <span class="px-2.5 py-1 rounded-full bg-white/20 text-xs font-bold font-mono" x-text="acceptedJobsCount + ' مشوار مؤكد'"></span>
+            </div>
+            <p class="text-xs text-emerald-50 leading-relaxed">
+                وافق الراكب على عرض السعر المقدم من طرفك. تم فك قفل رقم هاتف الراكب للتنسيق المباشر والبدء في تنفيذ المشوار.
+            </p>
+            <div class="flex items-center gap-2 pt-1">
+                <button @click="activeTab = 'accepted'" class="px-3.5 py-1.5 bg-white text-emerald-800 font-bold text-xs rounded-xl hover:bg-emerald-50 transition shadow-sm flex items-center gap-1">
+                    <span>عرض المشاوير المقبولة للتنفيذ</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        </div>
+    </template>
+
     <!-- Outbox Banner (Offline Offers Waiting to Sync) -->
     <div x-show="outboxOffers.length > 0" x-cloak class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 flex flex-col gap-2">
         <div class="flex items-center gap-2 text-amber-800 dark:text-amber-200 font-bold text-sm">
@@ -35,6 +57,22 @@
         <button @click="notification = null" class="px-2">✕</button>
     </div>
 
+    <!-- Tab Filters (All, Accepted, Open) -->
+    <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold">
+        <button @click="activeTab = 'all'" :class="activeTab === 'all' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center">
+            جميع الطلبات (<span x-text="requests.length"></span>)
+        </button>
+        <button @click="activeTab = 'accepted'" :class="activeTab === 'accepted' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center flex items-center justify-center gap-1">
+            <span>المقبولة للتنفيذ</span>
+            <template x-if="acceptedJobsCount > 0">
+                <span class="px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[10px]" x-text="acceptedJobsCount"></span>
+            </template>
+        </button>
+        <button @click="activeTab = 'open'" :class="activeTab === 'open' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center">
+            فرص متاحة (<span x-text="openOpportunitiesCount"></span>)
+        </button>
+    </div>
+
     <!-- Loading State -->
     <div x-show="loading && requests.length === 0" class="p-12 text-center text-slate-400 text-xs">
         <span class="text-3xl block mb-2 animate-bounce">⏳</span>
@@ -42,16 +80,20 @@
     </div>
 
     <!-- Empty State -->
-    <div x-show="!loading && requests.length === 0" class="p-8 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center gap-3">
+    <div x-show="!loading && filteredRequests.length === 0" class="p-8 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center gap-3">
         <span class="text-4xl">📭</span>
-        <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200">لا توجد طلبات مشاوير خاصة مفتوحة حالياً</h3>
+        <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="activeTab === 'accepted' ? 'لا توجد مشاوير مقبولة حالياً' : 'لا توجد طلبات مشاوير خاصة مفتوحة حالياً'"></h3>
         <p class="text-xs text-slate-400 max-w-xs">ستظهر هنا أي طلبات ينشرها الركاب للتنقل بين مدن ومناطق قطاع غزة فور نشرها.</p>
     </div>
 
     <!-- Requests List -->
     <div class="flex flex-col gap-4">
-        <template x-for="r in requests" :key="r.id">
-            <div class="p-5 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col gap-3.5 shadow-sm">
+        <template x-for="r in filteredRequests" :key="r.id">
+            <div class="p-5 rounded-3xl bg-white dark:bg-slate-800 border flex flex-col gap-3.5 shadow-sm transition"
+                :class="{
+                    'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/10': r.is_accepted,
+                    'border-slate-200 dark:border-slate-700': !r.is_accepted
+                }">
                 <!-- Header: Route & Status -->
                 <div class="flex items-start justify-between">
                     <div>
@@ -63,7 +105,7 @@
                         <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
                             <span>الراكب: <b class="text-slate-600 dark:text-slate-300" x-text="r.rider_name"></b></span>
                             <span>•</span>
-                            <span x-text="r.offers_count + ' عروض متنافسة'"></span>
+                            <span x-text="r.offers_count + ' عروض مقدمة'"></span>
                         </div>
                     </div>
 
@@ -72,10 +114,10 @@
                         <span class="text-xs px-2.5 py-1 rounded-full font-bold"
                             :class="{
                                 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300': r.my_offer.status === 'pending',
-                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-500': r.my_offer.status === 'accepted',
+                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-500': r.my_offer.status === 'accepted' || r.is_accepted,
                                 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300': r.my_offer.status === 'rejected'
                             }"
-                            x-text="r.my_offer.status_arabic">
+                            x-text="r.is_accepted ? 'تم قبول عرضك ✓' : r.my_offer.status_arabic">
                         </span>
                     </template>
                     <template x-if="!r.my_offer">
@@ -105,26 +147,38 @@
                     <p class="text-xs text-slate-500 italic bg-slate-50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800" x-text="'ملاحظة الراكب: ' + r.notes"></p>
                 </template>
 
-                <!-- If My Offer Accepted: Reveal Rider Phone & Call Button -->
-                <template x-if="r.my_offer && r.my_offer.status === 'accepted'">
-                    <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 flex flex-col gap-2">
+                <!-- If My Offer Accepted: Reveal Rider Phone & Call Button & Complete Action -->
+                <template x-if="r.is_accepted && r.status === 'accepted'">
+                    <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 flex flex-col gap-2.5">
                         <div class="flex items-center justify-between">
                             <span class="font-black text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
                                 <span>🎉</span>
-                                <span>تم قبول عرضك وتأكيد المشوار!</span>
+                                <span>تم قبول عرضك وتأكيد هذا المشوار!</span>
                             </span>
-                            <span class="font-mono font-bold text-xs text-emerald-700 dark:text-emerald-300" x-text="r.my_offer.price_ils + ' ₪'"></span>
+                            <span class="font-mono font-black text-sm text-emerald-700 dark:text-emerald-300" x-text="(r.my_offer ? r.my_offer.price_ils : '') + ' ₪'"></span>
                         </div>
                         <p class="text-[11px] text-emerald-700 dark:text-emerald-300">
-                            تم فك قفل هاتف الراكب للتنسيق معه مباشرة قبل الانطلاق:
+                            تم فك قفل هاتف الراكب للتنسيق المباشر قبل التحرك:
                         </p>
                         <div class="flex items-center justify-between pt-1">
-                            <span class="font-mono font-bold text-sm text-slate-800 dark:text-slate-100" x-text="r.rider_phone || '0569876543'"></span>
-                            <a :href="'tel:' + (r.rider_phone || '0569876543')" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1.5">
+                            <span class="font-mono font-bold text-sm text-slate-800 dark:text-slate-100" x-text="r.rider_phone"></span>
+                            <a :href="'tel:' + r.rider_phone" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1.5">
                                 <span>📞</span>
                                 <span>اتصال بالراكب</span>
                             </a>
                         </div>
+                        <div class="pt-2 border-t border-emerald-200 dark:border-emerald-800/60 flex items-center justify-end">
+                            <button @click="completeTrip(r.id)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1">
+                                <span>🏁</span>
+                                <span>إنهاء المشوار بعد الوصول</span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="r.status === 'completed'">
+                    <div class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold text-center">
+                        ✓ اكتمل هذا المشوار بنجاح
                     </div>
                 </template>
 
@@ -133,7 +187,7 @@
                     <template x-if="r.my_offer">
                         <div class="flex items-center gap-2 w-full">
                             <div class="flex-1 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                <span>عرضك الحالي:</span>
+                                <span>عرضك:</span>
                                 <span class="font-mono font-black text-sm text-teal-600 dark:text-teal-400" x-text="r.my_offer.price_ils + ' ₪'"></span>
                             </div>
 
@@ -144,7 +198,7 @@
                             </a>
 
                             <!-- Update Offer if Pending -->
-                            <template x-if="r.my_offer.status === 'pending'">
+                            <template x-if="r.my_offer.status === 'pending' && r.status === 'open'">
                                 <button @click="openOfferModal(r)" class="px-3 py-2 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 hover:bg-teal-100 border border-teal-200 dark:border-teal-800 text-xs font-bold rounded-xl transition active:scale-95">
                                     تعديل العرض
                                 </button>
@@ -152,7 +206,7 @@
                         </div>
                     </template>
 
-                    <template x-if="!r.my_offer">
+                    <template x-if="!r.my_offer && r.status === 'open'">
                         <div class="flex items-center justify-end w-full">
                             <button @click="openOfferModal(r)" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1.5">
                                 <span>🏷️</span>
@@ -218,19 +272,35 @@
 function driverOffersState() {
     return {
         requests: [],
+        activeTab: 'all',
+        acceptedJobsCount: 0,
         loading: true,
         submitting: false,
         notification: null,
         outboxOffers: [],
         showOfferModal: false,
         activeRequest: null,
+        pollInterval: null,
         offerForm: {
             price_ils: 70,
             notes: ''
         },
 
+        get openOpportunitiesCount() {
+            return this.requests.filter(r => r.status === 'open').length;
+        },
+
+        get filteredRequests() {
+            if (this.activeTab === 'accepted') {
+                return this.requests.filter(r => r.is_accepted);
+            }
+            if (this.activeTab === 'open') {
+                return this.requests.filter(r => r.status === 'open');
+            }
+            return this.requests;
+        },
+
         init() {
-            // Load outbox
             this.loadOutbox();
 
             // Load cached requests
@@ -238,16 +308,28 @@ function driverOffersState() {
             if (cached) {
                 try {
                     this.requests = JSON.parse(cached);
+                    this.recalcAcceptedCount();
                     this.loading = false;
                 } catch(e) {}
             }
 
             this.fetchRequests();
 
+            // Poll every 5 seconds to catch accepted offers and notifications in real time
+            this.pollInterval = setInterval(() => {
+                if (navigator.onLine && !this.submitting && !this.showOfferModal) {
+                    this.fetchRequests();
+                }
+            }, 5000);
+
             window.addEventListener('online', () => {
                 this.syncOutbox();
                 this.fetchRequests();
             });
+        },
+
+        recalcAcceptedCount() {
+            this.acceptedJobsCount = this.requests.filter(r => r.is_accepted && r.status === 'accepted').length;
         },
 
         loadOutbox() {
@@ -264,7 +346,15 @@ function driverOffersState() {
                 const res = await fetch('{{ route('api.requests.index') }}');
                 if (res.ok) {
                     const data = await res.json();
+                    const prevCount = this.acceptedJobsCount;
                     this.requests = data.requests;
+                    this.acceptedJobsCount = data.accepted_jobs_count || this.requests.filter(r => r.is_accepted && r.status === 'accepted').length;
+
+                    // If a new offer was accepted while driver was browsing
+                    if (this.acceptedJobsCount > prevCount && prevCount >= 0) {
+                        this.notification = '🎉 تنبيه جديد: وافق الراكب على عرض السعر المقدم من طرفك!';
+                    }
+
                     localStorage.setItem('meshwar_driver_requests_cache', JSON.stringify(data.requests));
                 }
             } catch (err) {
@@ -342,7 +432,6 @@ function driverOffersState() {
                     alert(data.error || 'فشل إرسال عرض السعر');
                 }
             } catch (err) {
-                // Network error: queue to outbox
                 this.outboxOffers.push({
                     requestId: requestId,
                     payload: payload,
@@ -353,6 +442,32 @@ function driverOffersState() {
                 this.notification = 'تم حفظ العرض في صندوق الانتظار وسيتم إرساله عند استقرار الاتصال.';
             } finally {
                 this.submitting = false;
+            }
+        },
+
+        async completeTrip(requestId) {
+            if (!confirm('هل أنت متأكد من إنهاء هذا المشوار الخاص وتأكيد وصول الركاب؟')) return;
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch(`/api/requests/${requestId}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken || '',
+                    }
+                });
+
+                const data = await res.json();
+                if (res.ok && data.ok) {
+                    this.notification = '🏁 تم إنهاء المشوار وتأكيد الوصول بنجاح! يمكنك مراجعة الأرباح في سجل الرحلات.';
+                    this.fetchRequests();
+                } else {
+                    alert(data.error || 'فشل إنهاء المشوار');
+                }
+            } catch (err) {
+                alert('حدث خطأ في الاتصال');
             }
         },
 

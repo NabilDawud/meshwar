@@ -139,8 +139,8 @@ class BookingController extends Controller
             ->latest()
             ->get()
             ->map(function (Booking $b) {
-                // Privacy Enforcement: phone unlocked only if status === 'confirmed'
-                $canCall = $b->status === 'confirmed';
+                // Privacy Enforcement: phone unlocked if status is confirmed, boarded, or completed
+                $canCall = in_array($b->status, ['confirmed', 'boarded', 'completed']);
                 $share = $b->locationShare;
 
                 return [
@@ -231,6 +231,11 @@ class BookingController extends Controller
             return response()->json(['error' => 'غير مصرح لك بتأكيد هذا الحجز'], 403);
         }
 
+        // Transition booking to boarded status
+        $booking->update([
+            'status' => 'boarded',
+        ]);
+
         // When boarded, end location sharing as rider is now in the vehicle
         if ($booking->locationShare) {
             $booking->locationShare->update([
@@ -242,9 +247,10 @@ class BookingController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'تم تأكيد صعود الراكب للمركبة',
+            'message' => 'تم تأكيد صعود الراكب للمركبة بنجاح',
             'booking_id' => $booking->id,
-            'status' => 'confirmed',
+            'status' => 'boarded',
+            'status_arabic' => 'تم الصعود للمركبة',
         ]);
     }
 
@@ -296,8 +302,8 @@ class BookingController extends Controller
 
         $driftInfo = $route ? $this->driftService->checkDrift($route) : ['drifting' => false];
 
-        // Privacy Rule: driver phone is disclosed ONLY when booking is confirmed
-        $driverPhone = ($booking->status === 'confirmed') ? $driver?->phone : null;
+        // Privacy Rule: driver phone is disclosed when booking is confirmed, boarded, or completed
+        $driverPhone = in_array($booking->status, ['confirmed', 'boarded', 'completed']) ? $driver?->phone : null;
 
         $locationShare = $booking->locationShare;
 

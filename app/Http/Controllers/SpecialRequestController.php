@@ -21,14 +21,21 @@ class SpecialRequestController extends Controller
         $user = Auth::user();
 
         if ($user->role === 'driver') {
-            $requests = SpecialRequest::where('status', 'open')
-                ->with(['rider:id,name', 'offers' => function ($q) use ($user) {
+            $requests = SpecialRequest::where(function ($query) use ($user) {
+                $query->where('status', 'open')
+                    ->orWhereHas('offers', function ($q) use ($user) {
+                        $q->where('driver_id', $user->id);
+                    });
+            })
+                ->with(['rider:id,name,phone', 'offers' => function ($q) use ($user) {
                     $q->where('driver_id', $user->id);
                 }])
+                ->withCount('offers')
                 ->latest()
                 ->get()
                 ->map(function (SpecialRequest $r) {
                     $myOffer = $r->offers->first();
+                    $isAcceptedDriver = ($myOffer && $myOffer->status === 'accepted') || ($r->accepted_offer_id && $myOffer && $r->accepted_offer_id === $myOffer->id);
 
                     return [
                         'id' => $r->id,
@@ -41,10 +48,14 @@ class SpecialRequestController extends Controller
                         'status' => $r->status,
                         'status_arabic' => $r->status_arabic,
                         'rider_name' => $r->rider->name,
-                        'offers_count' => $r->offers()->count(),
+                        'rider_phone' => $isAcceptedDriver ? $r->rider->phone : null,
+                        'can_call_rider' => $isAcceptedDriver,
+                        'is_accepted' => $isAcceptedDriver,
+                        'offers_count' => $r->offers_count,
                         'my_offer' => $myOffer ? [
                             'id' => $myOffer->id,
                             'price_ils' => (float) $myOffer->price_ils,
+                            'notes' => $myOffer->notes,
                             'status' => $myOffer->status,
                             'status_arabic' => $myOffer->status_arabic,
                         ] : null,
@@ -52,9 +63,12 @@ class SpecialRequestController extends Controller
                     ];
                 });
 
+            $acceptedCount = $requests->where('is_accepted', true)->where('status', 'accepted')->count();
+
             return response()->json([
                 'ok' => true,
                 'count' => $requests->count(),
+                'accepted_jobs_count' => $acceptedCount,
                 'requests' => $requests,
             ]);
         }
@@ -144,7 +158,7 @@ class SpecialRequestController extends Controller
             $myOffer = $specialRequest->offers->where('driver_id', $user->id)->first();
 
             // Privacy Rule: Rider phone revealed ONLY if driver's offer is accepted
-            $isAcceptedDriver = $myOffer && $myOffer->status === 'accepted';
+            $isAcceptedDriver = ($myOffer && $myOffer->status === 'accepted') || ($specialRequest->accepted_offer_id && $myOffer && $specialRequest->accepted_offer_id === $myOffer->id);
             $riderPhone = $isAcceptedDriver ? $specialRequest->rider->phone : null;
 
             return response()->json([
@@ -162,6 +176,7 @@ class SpecialRequestController extends Controller
                     'rider_name' => $specialRequest->rider->name,
                     'rider_phone' => $riderPhone,
                     'can_call_rider' => ! empty($riderPhone),
+                    'is_accepted' => $isAcceptedDriver,
                     'created_at' => $specialRequest->created_at->toISOString(),
                     'my_offer' => $myOffer ? [
                         'id' => $myOffer->id,
