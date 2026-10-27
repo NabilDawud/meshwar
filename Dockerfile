@@ -9,16 +9,20 @@ RUN npm run build
 # 2. Production Runner (PHP 8.4 + FrankenPHP)
 FROM dunglas/frankenphp:1-php8.4-alpine AS runner
 
+# Copy official Composer binary
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 RUN install-php-extensions \
     pdo_mysql \
     bcmath \
     opcache \
     intl \
-    zip
+    zip \
+    pcntl
 
 WORKDIR /app
 
-# Copy Composer dependencies & app files
+# Copy application files
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
 
@@ -26,13 +30,12 @@ COPY --from=frontend /app/public/build ./public/build
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Production optimizations
-RUN php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
+# Ensure storage and bootstrap/cache permissions
+RUN chown -R www-data:www-data storage bootstrap/cache && \
+    chmod -R 775 storage bootstrap/cache
 
 ENV PORT=80
-ENV FRANKENPHP_CONFIG="worker ./public/index.php"
 
-# Startup: run migrations; stop immediately on failure, then boot server
-CMD php artisan migrate --force && frankenphp run
+# Startup: ensure key, migrate database, seed demo data, optimize caches, then boot server
+CMD ["sh", "-c", "if [ -z \"$APP_KEY\" ]; then php artisan key:generate --force; fi && php artisan migrate --force && php artisan db:seed --force && php artisan optimize && frankenphp run"]
+
