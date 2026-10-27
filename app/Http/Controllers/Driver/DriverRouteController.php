@@ -132,9 +132,12 @@ class DriverRouteController extends Controller
             'is_trip_active' => ['nullable', 'boolean'],
         ]);
 
+        $lat = round((float) $validated['lat'], 5);
+        $lng = round((float) $validated['lng'], 5);
+
         $route->update([
-            'last_latitude' => $validated['lat'],
-            'last_longitude' => $validated['lng'],
+            'last_latitude' => $lat,
+            'last_longitude' => $lng,
             'last_landmark' => $validated['landmark'] ?? $route->last_landmark,
             'is_trip_active' => $validated['is_trip_active'] ?? $route->is_trip_active,
             'last_position_at' => now(),

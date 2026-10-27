@@ -62,7 +62,11 @@ class PlanTripCommand extends Command
         }
 
         if (! empty($result['ai_advice']['tip'])) {
-            $provider = $result['ai_advice']['provider'] === 'anthropic_claude' ? 'الذكاء الاصطناعي (Claude)' : 'نصائح مشوار المعتمدة';
+            $provider = match ($result['ai_advice']['provider'] ?? '') {
+                'google_gemini' => 'الذكاء الاصطناعي (Gemini)',
+                'anthropic_claude' => 'الذكاء الاصطناعي (Claude)',
+                default => 'نصائح مشوار المعتمدة'
+            };
             $this->line("<fg=cyan>💡 نصيحة السفر [{$provider}]:</> ".$result['ai_advice']['tip']);
         }
 

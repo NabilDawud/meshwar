@@ -242,6 +242,7 @@
 </div>
 
 @push('scripts')
+<script src="/js/gaza-geo-sync.js"></script>
 <script>
 function driverDashboard(initialData) {
     return {
@@ -251,6 +252,8 @@ function driverDashboard(initialData) {
         lastLandmark: '{{ $route->last_landmark ?? '' }}',
         lastPositionAge: '{{ $route->position_age_arabic ?? 'غير محدد' }}',
         isBroadcasting: false,
+        lastSentPoint: null,
+        tripTimer: null,
 
         async updateStatus(newStatus) {
             this.status = newStatus;
@@ -277,7 +280,20 @@ function driverDashboard(initialData) {
             this.isTripActive = !this.isTripActive;
             if (this.isTripActive) {
                 this.broadcastCurrentPosition();
+                // Periodic GPS check every 15s using gaza-geo-sync standing-still throttle
+                if (!this.tripTimer) {
+                    this.tripTimer = setInterval(() => {
+                        if (this.isTripActive && navigator.onLine) {
+                            this.broadcastCurrentPosition();
+                        }
+                    }, 15000);
+                }
             } else {
+                if (this.tripTimer) {
+                    clearInterval(this.tripTimer);
+                    this.tripTimer = null;
+                }
+                this.lastSentPoint = null;
                 try {
                     await fetch('{{ route('api.driver.position') }}', {
                         method: 'POST',
@@ -297,9 +313,17 @@ function driverDashboard(initialData) {
         },
 
         async broadcastCurrentPosition() {
-            this.isBroadcasting = true;
+            const sendPos = async (rawLat, rawLng, landmarkName) => {
+                const lat = window.GazaGeoSync ? window.GazaGeoSync.quantize(rawLat) : Math.round(rawLat * 1e5) / 1e5;
+                const lng = window.GazaGeoSync ? window.GazaGeoSync.quantize(rawLng) : Math.round(rawLng * 1e5) / 1e5;
 
-            const sendPos = async (lat, lng, landmarkName) => {
+                // gaza-geo-sync standing-still throttle: don't re-upload if vehicle hasn't moved 15m unless 60s passed
+                if (window.GazaGeoSync && !window.GazaGeoSync.worthSending(this.lastSentPoint, { lat, lng })) {
+                    return;
+                }
+
+                this.isBroadcasting = true;
+
                 try {
                     const res = await fetch('{{ route('api.driver.position') }}', {
                         method: 'POST',
@@ -319,6 +343,7 @@ function driverDashboard(initialData) {
                     if (data.ok) {
                         this.lastLandmark = data.position.landmark;
                         this.lastPositionAge = data.position.position_age_arabic;
+                        this.lastSentPoint = { lat, lng, sentAt: Date.now() };
                     }
                 } catch (err) {
                     console.warn('Offline: GPS position saved in outbox', err);

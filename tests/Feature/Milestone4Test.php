@@ -150,12 +150,15 @@ class Milestone4Test extends TestCase
     }
 
     /**
-     * Test 4: App is fully usable without ANTHROPIC_API_KEY.
+     * Test 4: App is fully usable without any AI key set.
      */
     public function test_planner_works_cleanly_with_no_ai_key_set(): void
     {
+        putenv('GEMINI_API_KEY=');
+        $_ENV['GEMINI_API_KEY'] = null;
         putenv('ANTHROPIC_API_KEY=');
         $_ENV['ANTHROPIC_API_KEY'] = null;
+        config(['services.gemini.key' => null, 'services.anthropic.key' => null]);
 
         $network = $this->createTinyFixedNetwork();
         $planner = new TripPlannerService(new AiTransitAssistantService);
@@ -170,12 +173,55 @@ class Milestone4Test extends TestCase
     }
 
     /**
-     * Test 5: Optional AI layer when ANTHROPIC_API_KEY is present.
+     * Test 5: Optional AI layer when GEMINI_API_KEY is present (Google Gemini free model).
      */
-    public function test_optional_ai_layer_activates_when_key_provided(): void
+    public function test_optional_gemini_ai_layer_activates_when_key_provided(): void
     {
-        putenv('ANTHROPIC_API_KEY=mock-test-key');
-        $_ENV['ANTHROPIC_API_KEY'] = 'mock-test-key';
+        putenv('GEMINI_API_KEY=mock-gemini-key');
+        $_ENV['GEMINI_API_KEY'] = 'mock-gemini-key';
+        putenv('ANTHROPIC_API_KEY=');
+        $_ENV['ANTHROPIC_API_KEY'] = null;
+        config(['services.gemini.key' => 'mock-gemini-key', 'services.anthropic.key' => null]);
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                ['text' => 'نصيحة ذكية من جيميناي: توجه إلى الموقف قبل موعد الانطلاق بـ 5 دقائق.'],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $network = $this->createTinyFixedNetwork();
+        $planner = new TripPlannerService(new AiTransitAssistantService);
+
+        $result = $planner->plan('دوار العودة - رفح', 'دوار بني سهيلا', null, $network);
+
+        $this->assertTrue($result['found']);
+        $this->assertTrue($result['ai_advice']['enabled']);
+        $this->assertEquals('google_gemini', $result['ai_advice']['provider']);
+        $this->assertStringContainsString('نصيحة ذكية من جيميناي', $result['ai_advice']['tip']);
+
+        // Clean up environment
+        putenv('GEMINI_API_KEY=');
+        $_ENV['GEMINI_API_KEY'] = null;
+    }
+
+    /**
+     * Test 6: Optional AI layer when ANTHROPIC_API_KEY is present (Anthropic Claude fallback).
+     */
+    public function test_optional_ai_layer_activates_when_anthropic_key_provided(): void
+    {
+        putenv('GEMINI_API_KEY=');
+        $_ENV['GEMINI_API_KEY'] = null;
+        putenv('ANTHROPIC_API_KEY=mock-anthropic-key');
+        $_ENV['ANTHROPIC_API_KEY'] = 'mock-anthropic-key';
+        config(['services.gemini.key' => null, 'services.anthropic.key' => 'mock-anthropic-key']);
 
         Http::fake([
             'https://api.anthropic.com/v1/messages' => Http::response([
