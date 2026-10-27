@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\DriverRoute;
+use App\Notifications\MishwarNotification;
 use App\Services\RouteDriftService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,19 @@ class BookingController extends Controller
             ]);
 
             $booking->load(['route.driver.vehicle']);
+
+            // Notify driver of the new booking
+            $driver = $route->driver;
+            if ($driver) {
+                $driver->notify(new MishwarNotification(
+                    title: 'حجز مقعد جديد 🚐',
+                    message: "قام {$user->name} بحجز {$seatsRequested} مقاعد على رحلتك ({$booking->pickup_stop} إلى {$booking->dropoff_stop}).",
+                    type: 'booking',
+                    icon: '🚐',
+                    actionUrl: route('driver.manifest'),
+                    extra: ['booking_id' => $booking->id]
+                ));
+            }
 
             return response()->json([
                 'ok' => true,
@@ -216,6 +230,19 @@ class BookingController extends Controller
             ]);
         }
 
+        // Notify rider of cancellation
+        $rider = $booking->rider;
+        if ($rider) {
+            $rider->notify(new MishwarNotification(
+                title: 'إلغاء الحجز من قِبل السائق ⚠️',
+                message: "تم إلغاء حجزك على رحلة {$booking->route->name}. السبب: {$reason}",
+                type: 'booking',
+                icon: '⚠️',
+                actionUrl: route('rider.bookings'),
+                extra: ['booking_id' => $booking->id, 'status' => 'cancelled_by_driver']
+            ));
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'تم إلغاء الحجز لعدم جاهزية الراكب',
@@ -252,6 +279,19 @@ class BookingController extends Controller
             ]);
         }
 
+        // Notify rider of confirmed boarding
+        $rider = $booking->rider;
+        if ($rider) {
+            $rider->notify(new MishwarNotification(
+                title: 'تم تأكيد صعودك للمركبة 🚐',
+                message: "أكد السائق {$user->name} صعودك للمركبة. نتمنى لك رحلة آمنة ومريحة.",
+                type: 'booking',
+                icon: '✅',
+                actionUrl: route('rider.bookings'),
+                extra: ['booking_id' => $booking->id, 'status' => 'boarded']
+            ));
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'تم تأكيد صعود الراكب للمركبة بنجاح',
@@ -285,6 +325,19 @@ class BookingController extends Controller
                 'last_latitude' => null,
                 'last_longitude' => null,
             ]);
+        }
+
+        // Notify rider to rate the trip
+        $rider = $booking->rider;
+        if ($rider && $user->id !== $rider->id) {
+            $rider->notify(new MishwarNotification(
+                title: 'اكتملت رحلتك بنجاح! ⭐',
+                message: "وصلت بالسلامة مع السائق {$booking->route?->driver?->name}. شاركنا تقييمك للرحلة لمساعدتنا في تحسين الخدمة.",
+                type: 'rating',
+                icon: '⭐',
+                actionUrl: route('rides.history'),
+                extra: ['booking_id' => $booking->id]
+            ));
         }
 
         return response()->json([

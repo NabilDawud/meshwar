@@ -113,7 +113,7 @@
         </div>
 
         <!-- Vehicle Cards Grid -->
-        <div class="flex flex-col gap-3" x-show="vehicles.length > 0">
+        <div class="flex flex-col gap-3" x-show="vehicles.length > 0" id="vehicle-list-container">
             <template x-for="vehicle in vehicles" :key="vehicle.vehicle_id">
                 <div 
                     @click="zoomToVehicle(vehicle)"
@@ -175,9 +175,9 @@
                         </span>
                         @auth
                             @if(Auth::user()->role === 'driver')
-                                <a href="{{ route('driver.dashboard') }}" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-teal-700 dark:text-teal-300 font-bold text-xs rounded-xl shadow-sm transition">
-                                    لوحة السائق 🚗
-                                </a>
+                                <span class="text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-2.5 py-1 rounded-xl border border-teal-200 dark:border-teal-800">
+                                    وضع السائق
+                                </span>
                             @else
                                 <button 
                                     @click.stop="bookSeat(vehicle)" 
@@ -197,7 +197,50 @@
             </template>
         </div>
 
-        <div x-show="vehicles.length === 0" class="p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2 text-xs text-slate-400">
+        <!-- Pagination Controls (Powered directly by Laravel Controller Pagination) -->
+        <div x-show="pagination.last_page > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm text-xs mt-1">
+            <div class="text-slate-500 font-medium">
+                عرض <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.from || 1"></span> إلى <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.to || vehicles.length"></span> من أصل <span class="font-black text-teal-600 dark:text-teal-400 font-mono" x-text="pagination.total"></span> مركبة
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button 
+                    @click="changePage(pagination.current_page - 1)" 
+                    :disabled="pagination.current_page <= 1"
+                    class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                    السابق
+                </button>
+                <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 font-bold font-mono text-teal-700 dark:text-teal-300">
+                    <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
+                </span>
+                <button 
+                    @click="changePage(pagination.current_page + 1)" 
+                    :disabled="pagination.current_page >= pagination.last_page"
+                    class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                >
+                    التالي
+                </button>
+            </div>
+        </div>
+
+        <!-- Skeleton Loading Cards (During initial load when no cached vehicles exist yet) -->
+        <div x-show="loading && vehicles.length === 0" class="flex flex-col gap-3">
+            <template x-for="i in 3" :key="i">
+                <div class="p-4 rounded-3xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700/60 shadow-sm animate-pulse flex flex-col gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-200 dark:bg-slate-700 shrink-0"></div>
+                        <div class="flex-1 flex flex-col gap-2">
+                            <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded-lg w-28"></div>
+                            <div class="h-3 bg-slate-100 dark:bg-slate-700/60 rounded-lg w-48"></div>
+                        </div>
+                    </div>
+                    <div class="h-10 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800"></div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Empty State (Only shown when done loading and genuinely no vehicles found) -->
+        <div x-show="!loading && vehicles.length === 0" class="p-8 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center flex flex-col items-center gap-2 text-xs text-slate-400">
             <span class="text-3xl">🚐</span>
             <span class="font-bold text-slate-600 dark:text-slate-300">لا توجد مركبات مطابقة للبحث حالياً</span>
             <span>جرب تغيير نقطة الانطلاق أو الوصول، أو اضغط على إلغاء التصفية.</span>
@@ -212,15 +255,60 @@ function riderHome() {
     return {
         landmarks: [],
         vehicles: [],
+        mapPins: [],
         searchFrom: '',
         searchTo: '',
         searchTime: '',
         selectedVehicleId: null,
+        loading: true,
         map: null,
         markers: [],
+        pagination: {
+            current_page: 1,
+            last_page: 1,
+            total: 0,
+            from: 1,
+            to: 10
+        },
 
         async init() {
-            // 1. Fetch OSM Gazetteer
+            // 1. Instant Cache Hydration: Load cached first page immediately for 0ms visual delay!
+            try {
+                const cached = localStorage.getItem('meshwar_active_vehicles_cache');
+                if (cached) {
+                    const data = JSON.parse(cached);
+                    if (data.vehicles && data.vehicles.length > 0) {
+                        this.vehicles = data.vehicles;
+                        this.loading = false;
+                        this.pagination = {
+                            current_page: data.current_page || 1,
+                            last_page: data.last_page || 1,
+                            total: data.total ?? data.count,
+                            from: data.from || 1,
+                            to: data.to || data.count
+                        };
+                    }
+                }
+            } catch (e) {}
+
+            // 2. Fetch fresh vehicles in parallel immediately (no blocking)
+            this.fetchVehicles(1);
+
+            // 3. Fetch Map Pins and Gazetteer in parallel
+            this.fetchMapPins();
+            this.fetchGazetteer();
+
+            // 4. Initialize Map
+            this.initMap();
+
+            // Periodic refresh every 30 seconds
+            setInterval(() => {
+                this.fetchMapPins();
+                this.fetchVehicles(this.pagination.current_page);
+            }, 30000);
+        },
+
+        async fetchGazetteer() {
             try {
                 const gRes = await fetch('{{ route('api.gazetteer') }}');
                 const gData = await gRes.json();
@@ -230,15 +318,6 @@ function riderHome() {
             } catch (e) {
                 console.warn('Could not load gazetteer', e);
             }
-
-            // 2. Initialize Map
-            this.initMap();
-
-            // 3. Fetch Active Vehicles
-            await this.fetchVehicles();
-
-            // Refresh vehicles every 30 seconds
-            setInterval(() => this.fetchVehicles(), 30000);
         },
 
         initMap() {
@@ -287,9 +366,24 @@ function riderHome() {
             });
         },
 
-        async fetchVehicles() {
+        async fetchMapPins() {
+            try {
+                const res = await fetch('{{ route('api.rides.map_pins') }}');
+                const data = await res.json();
+                if (data.ok) {
+                    this.mapPins = data.pins;
+                    this.renderVehicleMarkers();
+                }
+            } catch (err) {
+                console.warn('Could not load map pins', err);
+            }
+        },
+
+        async fetchVehicles(page = 1) {
+            this.loading = true;
             try {
                 const params = new URLSearchParams();
+                params.append('page', page);
                 if (this.searchFrom) params.append('from', this.searchFrom);
                 if (this.searchTo) params.append('to', this.searchTo);
                 if (this.searchTime) params.append('time', this.searchTime);
@@ -298,18 +392,34 @@ function riderHome() {
                 const data = await res.json();
                 if (data.ok) {
                     this.vehicles = data.vehicles;
-                    // Cache locally for offline viewing
-                    try {
-                        localStorage.setItem('cached_active_vehicles', JSON.stringify(this.vehicles));
-                    } catch (e) {}
-                    this.renderVehicleMarkers();
+                    this.pagination = {
+                        current_page: data.current_page || page,
+                        last_page: data.last_page || 1,
+                        total: data.total ?? data.count,
+                        from: data.from || 1,
+                        to: data.to || data.count
+                    };
+
+                    // Cache default first page to eliminate any reload delay
+                    if (page === 1 && !this.searchFrom && !this.searchTo && !this.searchTime) {
+                        try {
+                            localStorage.setItem('meshwar_active_vehicles_cache', JSON.stringify(data));
+                        } catch (e) {}
+                    }
                 }
             } catch (err) {
-                console.warn('Network offline, restoring cached vehicles', err);
-                const cached = localStorage.getItem('cached_active_vehicles');
-                if (cached) {
-                    this.vehicles = JSON.parse(cached);
-                    this.renderVehicleMarkers();
+                console.warn('Network offline', err);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        changePage(newPage) {
+            if (newPage >= 1 && newPage <= this.pagination.last_page) {
+                this.fetchVehicles(newPage);
+                const el = document.getElementById('vehicle-list-container');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         },
@@ -321,29 +431,30 @@ function riderHome() {
             this.markers.forEach(m => m.remove());
             this.markers = [];
 
-            this.vehicles.forEach(vehicle => {
+            // Draw pins for all active vehicles using the lightweight mapPins endpoint
+            this.mapPins.forEach(pin => {
                 const el = document.createElement('div');
-                const isAjala = vehicle.vehicle_type === 'ajala';
+                const isAjala = pin.vehicle_type === 'ajala';
                 el.className = 'w-9 h-9 rounded-2xl flex items-center justify-center text-lg shadow-lg cursor-pointer transition transform hover:scale-110 ' + 
                     (isAjala ? 'bg-amber-500 border-2 border-white' : 'bg-teal-600 border-2 border-white');
                 el.innerText = isAjala ? '🛞' : '🚐';
 
                 const popupHtml = `
                     <div style="direction: rtl; text-align: right; font-family: 'Cairo', sans-serif; padding: 4px;">
-                        <b style="font-size: 13px;">${vehicle.vehicle_type_arabic} - ${vehicle.free_seats} مقاعد</b><br>
-                        <span style="font-size: 11px; color: #475569;">${vehicle.route_name}</span><br>
-                        <span style="font-size: 11px; color: #0d9488; font-weight: bold;">آخر موقع: ${vehicle.last_landmark}</span><br>
-                        <span style="font-size: 10px; color: #64748b;">⏱️ ${vehicle.position_age_arabic}</span>
+                        <b style="font-size: 13px;">${pin.vehicle_type_arabic} - ${pin.free_seats} مقاعد</b><br>
+                        <span style="font-size: 11px; color: #475569;">${pin.route_name}</span><br>
+                        <span style="font-size: 11px; color: #0d9488; font-weight: bold;">آخر موقع: ${pin.last_landmark}</span><br>
+                        <span style="font-size: 10px; color: #64748b;">⏱️ ${pin.position_age_arabic}</span>
                     </div>
                 `;
 
                 const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat([vehicle.last_longitude, vehicle.last_latitude])
+                    .setLngLat([pin.lng, pin.lat])
                     .setPopup(new maplibregl.Popup({ offset: 15 }).setHTML(popupHtml))
                     .addTo(this.map);
 
                 el.addEventListener('click', () => {
-                    this.selectedVehicleId = vehicle.vehicle_id;
+                    this.selectedVehicleId = pin.vehicle_id;
                 });
 
                 this.markers.push(marker);
@@ -365,7 +476,7 @@ function riderHome() {
             this.searchFrom = '';
             this.searchTo = '';
             this.searchTime = '';
-            this.fetchVehicles();
+            this.fetchVehicles(1);
         },
 
         async bookSeat(vehicle) {

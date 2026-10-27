@@ -125,6 +125,32 @@
             </div>
         </template>
     </div>
+
+    <!-- Pagination Controls (Powered directly by Laravel Controller Pagination) -->
+    <div x-show="pagination.last_page > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm text-xs mt-1">
+        <div class="text-slate-500 font-medium">
+            عرض <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.from || 1"></span> إلى <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.to || trips.length"></span> من أصل <span class="font-black text-teal-600 dark:text-teal-400 font-mono" x-text="pagination.total"></span> رحلة
+        </div>
+        <div class="flex items-center gap-1.5">
+            <button 
+                @click="changePage(pagination.current_page - 1)" 
+                :disabled="pagination.current_page <= 1"
+                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                السابق
+            </button>
+            <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 font-bold font-mono text-teal-700 dark:text-teal-300">
+                <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
+            </span>
+            <button 
+                @click="changePage(pagination.current_page + 1)" 
+                :disabled="pagination.current_page >= pagination.last_page"
+                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                التالي
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -139,6 +165,20 @@ function driverHistoryState() {
         },
         loading: true,
         isOffline: !navigator.onLine,
+        pagination: {
+            current_page: 1,
+            last_page: 1,
+            total: 0,
+            from: 1,
+            to: 10
+        },
+
+        changePage(p) {
+            if (p >= 1 && p <= this.pagination.last_page) {
+                this.fetchHistory(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
 
         init() {
             // Load cached version first
@@ -152,11 +192,11 @@ function driverHistoryState() {
                 } catch(e) {}
             }
 
-            this.fetchHistory();
+            this.fetchHistory(1);
 
             window.addEventListener('online', () => {
                 this.isOffline = false;
-                this.fetchHistory();
+                this.fetchHistory(1);
             });
 
             window.addEventListener('offline', () => {
@@ -164,13 +204,20 @@ function driverHistoryState() {
             });
         },
 
-        async fetchHistory() {
+        async fetchHistory(page = 1) {
             try {
-                const res = await fetch('{{ route('api.driver.history') }}');
+                const res = await fetch(`{{ route('api.driver.history') }}?page=${page}`);
                 if (res.ok) {
                     const data = await res.json();
                     this.trips = data.trips || [];
                     this.stats = data.stats || this.stats;
+                    this.pagination = {
+                        current_page: data.current_page || page,
+                        last_page: data.last_page || 1,
+                        total: data.total ?? data.stats?.total_completed_trips,
+                        from: data.from || 1,
+                        to: data.to || (data.trips || []).length
+                    };
                     localStorage.setItem('meshwar_driver_history_cache', JSON.stringify(data));
                 }
             } catch (err) {

@@ -57,18 +57,18 @@
         <button @click="notification = null" class="px-2">✕</button>
     </div>
 
-    <!-- Tab Filters (All, Accepted, Open) -->
+    <!-- Tab Filters (All, Accepted, Open) - Server-Side Filtering -->
     <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-xs font-bold">
-        <button @click="activeTab = 'all'" :class="activeTab === 'all' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center">
-            جميع الطلبات (<span x-text="requests.length"></span>)
+        <button @click="setTab('all')" :class="activeTab === 'all' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center">
+            جميع الطلبات (<span x-text="pagination.total"></span>)
         </button>
-        <button @click="activeTab = 'accepted'" :class="activeTab === 'accepted' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center flex items-center justify-center gap-1">
+        <button @click="setTab('accepted')" :class="activeTab === 'accepted' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center flex items-center justify-center gap-1">
             <span>المقبولة للتنفيذ</span>
             <template x-if="acceptedJobsCount > 0">
                 <span class="px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[10px]" x-text="acceptedJobsCount"></span>
             </template>
         </button>
-        <button @click="activeTab = 'open'" :class="activeTab === 'open' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center">
+        <button @click="setTab('open')" :class="activeTab === 'open' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 rounded-xl transition text-center">
             فرص متاحة (<span x-text="openOpportunitiesCount"></span>)
         </button>
     </div>
@@ -80,7 +80,7 @@
     </div>
 
     <!-- Empty State -->
-    <div x-show="!loading && filteredRequests.length === 0" class="p-8 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center gap-3">
+    <div x-show="!loading && requests.length === 0" class="p-8 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center gap-3">
         <span class="text-4xl">📭</span>
         <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="activeTab === 'accepted' ? 'لا توجد مشاوير مقبولة حالياً' : 'لا توجد طلبات مشاوير خاصة مفتوحة حالياً'"></h3>
         <p class="text-xs text-slate-400 max-w-xs">ستظهر هنا أي طلبات ينشرها الركاب للتنقل بين مدن ومناطق قطاع غزة فور نشرها.</p>
@@ -88,7 +88,7 @@
 
     <!-- Requests List -->
     <div class="flex flex-col gap-4">
-        <template x-for="r in filteredRequests" :key="r.id">
+        <template x-for="r in requests" :key="r.id">
             <div class="p-5 rounded-3xl bg-white dark:bg-slate-800 border flex flex-col gap-3.5 shadow-sm transition"
                 :class="{
                     'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/10': r.is_accepted,
@@ -219,6 +219,32 @@
         </template>
     </div>
 
+    <!-- Pagination Controls (Powered directly by Laravel Controller Pagination) -->
+    <div x-show="pagination.last_page > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm text-xs mt-1">
+        <div class="text-slate-500 font-medium">
+            عرض <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.from || 1"></span> إلى <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.to || requests.length"></span> من أصل <span class="font-black text-teal-600 dark:text-teal-400 font-mono" x-text="pagination.total"></span> طلب
+        </div>
+        <div class="flex items-center gap-1.5">
+            <button 
+                @click="changePage(pagination.current_page - 1)" 
+                :disabled="pagination.current_page <= 1"
+                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                السابق
+            </button>
+            <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 font-bold font-mono text-teal-700 dark:text-teal-300">
+                <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
+            </span>
+            <button 
+                @click="changePage(pagination.current_page + 1)" 
+                :disabled="pagination.current_page >= pagination.last_page"
+                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                التالي
+            </button>
+        </div>
+    </div>
+
     <!-- Submit / Edit Offer Modal -->
     <div x-show="showOfferModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div @click.away="showOfferModal = false" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col gap-4 shadow-2xl">
@@ -274,6 +300,7 @@ function driverOffersState() {
         requests: [],
         activeTab: 'all',
         acceptedJobsCount: 0,
+        openOpportunitiesCount: 0,
         loading: true,
         submitting: false,
         notification: null,
@@ -285,51 +312,41 @@ function driverOffersState() {
             price_ils: 70,
             notes: ''
         },
-
-        get openOpportunitiesCount() {
-            return this.requests.filter(r => r.status === 'open').length;
-        },
-
-        get filteredRequests() {
-            if (this.activeTab === 'accepted') {
-                return this.requests.filter(r => r.is_accepted);
-            }
-            if (this.activeTab === 'open') {
-                return this.requests.filter(r => r.status === 'open');
-            }
-            return this.requests;
+        pagination: {
+            current_page: 1,
+            last_page: 1,
+            total: 0,
+            from: 1,
+            to: 8
         },
 
         init() {
             this.loadOutbox();
+            this.fetchRequests(1);
 
-            // Load cached requests
-            const cached = localStorage.getItem('meshwar_driver_requests_cache');
-            if (cached) {
-                try {
-                    this.requests = JSON.parse(cached);
-                    this.recalcAcceptedCount();
-                    this.loading = false;
-                } catch(e) {}
-            }
-
-            this.fetchRequests();
-
-            // Poll every 5 seconds to catch accepted offers and notifications in real time
+            // Poll every 8 seconds to catch accepted offers and notifications
             this.pollInterval = setInterval(() => {
                 if (navigator.onLine && !this.submitting && !this.showOfferModal) {
-                    this.fetchRequests();
+                    this.fetchRequests(this.pagination.current_page);
                 }
-            }, 5000);
+            }, 8000);
 
             window.addEventListener('online', () => {
                 this.syncOutbox();
-                this.fetchRequests();
+                this.fetchRequests(1);
             });
         },
 
-        recalcAcceptedCount() {
-            this.acceptedJobsCount = this.requests.filter(r => r.is_accepted && r.status === 'accepted').length;
+        setTab(tab) {
+            this.activeTab = tab;
+            this.fetchRequests(1);
+        },
+
+        changePage(p) {
+            if (p >= 1 && p <= this.pagination.last_page) {
+                this.fetchRequests(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         },
 
         loadOutbox() {
@@ -341,21 +358,31 @@ function driverOffersState() {
             localStorage.setItem('meshwar_driver_offers_outbox', JSON.stringify(this.outboxOffers));
         },
 
-        async fetchRequests() {
+        async fetchRequests(page = 1) {
             try {
-                const res = await fetch('{{ route('api.requests.index') }}');
+                const params = new URLSearchParams();
+                params.append('page', page);
+                params.append('tab', this.activeTab);
+
+                const res = await fetch(`{{ route('api.requests.index') }}?${params.toString()}`);
                 if (res.ok) {
                     const data = await res.json();
                     const prevCount = this.acceptedJobsCount;
                     this.requests = data.requests;
-                    this.acceptedJobsCount = data.accepted_jobs_count || this.requests.filter(r => r.is_accepted && r.status === 'accepted').length;
+                    this.acceptedJobsCount = data.accepted_jobs_count || 0;
+                    this.openOpportunitiesCount = data.open_opportunities_count || 0;
+                    this.pagination = {
+                        current_page: data.current_page || page,
+                        last_page: data.last_page || 1,
+                        total: data.total ?? data.count,
+                        from: data.from || 1,
+                        to: data.to || data.count
+                    };
 
                     // If a new offer was accepted while driver was browsing
                     if (this.acceptedJobsCount > prevCount && prevCount >= 0) {
                         this.notification = '🎉 تنبيه جديد: وافق الراكب على عرض السعر المقدم من طرفك!';
                     }
-
-                    localStorage.setItem('meshwar_driver_requests_cache', JSON.stringify(data.requests));
                 }
             } catch (err) {
                 console.warn('Driver viewing cached opportunities', err);

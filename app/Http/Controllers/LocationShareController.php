@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\LocationShare;
+use App\Notifications\MishwarNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,19 @@ class LocationShareController extends Controller
             ]
         );
 
+        // Notify rider of location share request
+        $rider = $booking->rider;
+        if ($rider) {
+            $rider->notify(new MishwarNotification(
+                title: 'طلب مشاركة الموقع المباشر 📍',
+                message: "طلب السائق {$user->name} مشاركة موقعك المباشر لمدة 15 دقيقة لتسهيل نقطة اللقاء.",
+                type: 'location',
+                icon: '📍',
+                actionUrl: route('rider.bookings'),
+                extra: ['booking_id' => $booking->id, 'share_id' => $share->id]
+            ));
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'تم إرسال طلب مشاركة الموقع للراكب بنجاح',
@@ -75,6 +89,19 @@ class LocationShareController extends Controller
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+            // Notify driver of location sharing approval
+            $driver = $share->driver;
+            if ($driver) {
+                $driver->notify(new MishwarNotification(
+                    title: 'تمت الموافقة على مشاركة الموقع 📍',
+                    message: "وافق الراكب {$user->name} على مشاركة موقعه المباشر معك لمدة 15 دقيقة.",
+                    type: 'location',
+                    icon: '📍',
+                    actionUrl: route('driver.manifest'),
+                    extra: ['share_id' => $share->id, 'booking_id' => $share->booking_id]
+                ));
+            }
+
             return response()->json([
                 'ok' => true,
                 'status' => 'active',
@@ -89,6 +116,19 @@ class LocationShareController extends Controller
             'last_latitude' => null,
             'last_longitude' => null,
         ]);
+
+        // Notify driver of refusal
+        $driver = $share->driver;
+        if ($driver) {
+            $driver->notify(new MishwarNotification(
+                title: 'رفض مشاركة الموقع ℹ️',
+                message: "اعتذر الراكب {$user->name} عن مشاركة موقعه المباشر.",
+                type: 'location',
+                icon: 'ℹ️',
+                actionUrl: route('driver.manifest'),
+                extra: ['share_id' => $share->id, 'booking_id' => $share->booking_id]
+            ));
+        }
 
         return response()->json([
             'ok' => true,

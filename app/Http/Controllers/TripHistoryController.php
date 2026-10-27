@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\SpecialRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
 class TripHistoryController extends Controller
@@ -13,7 +15,7 @@ class TripHistoryController extends Controller
      * Retrieve completed trip history for the authenticated rider.
      * Includes both completed transit bookings and completed special charter trips.
      */
-    public function riderHistory(): JsonResponse
+    public function riderHistory(Request $request): JsonResponse
     {
         $user = Auth::user();
 
@@ -107,6 +109,32 @@ class TripHistoryController extends Controller
 
         $totalSpent = $trips->sum('fare_ils');
 
+        if ($request->has('page')) {
+            $page = max(1, (int) $request->query('page', 1));
+            $perPage = max(1, (int) $request->query('per_page', 10));
+
+            $paginated = new LengthAwarePaginator(
+                $trips->forPage($page, $perPage)->values(),
+                $trips->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+
+            return response()->json([
+                'ok' => true,
+                'total_trips' => $trips->count(),
+                'total_spent_ils' => (float) $totalSpent,
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
+                'from' => $paginated->firstItem(),
+                'to' => $paginated->lastItem(),
+                'trips' => $paginated->values(),
+            ]);
+        }
+
         return response()->json([
             'ok' => true,
             'total_trips' => $trips->count(),
@@ -119,7 +147,7 @@ class TripHistoryController extends Controller
      * Retrieve completed trip history for the authenticated driver.
      * Includes statistics on total trips, earnings in ILS, and received ratings.
      */
-    public function driverHistory(): JsonResponse
+    public function driverHistory(Request $request): JsonResponse
     {
         $user = Auth::user();
 
@@ -187,6 +215,36 @@ class TripHistoryController extends Controller
             ->values();
 
         $totalEarned = $trips->sum('fare_ils');
+
+        if ($request->has('page')) {
+            $page = max(1, (int) $request->query('page', 1));
+            $perPage = max(1, (int) $request->query('per_page', 10));
+
+            $paginated = new LengthAwarePaginator(
+                $trips->forPage($page, $perPage)->values(),
+                $trips->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+
+            return response()->json([
+                'ok' => true,
+                'stats' => [
+                    'total_completed_trips' => $trips->count(),
+                    'total_earned_ils' => (float) $totalEarned,
+                    'average_rating' => $user->average_rating,
+                    'ratings_count' => $user->ratings_count,
+                ],
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
+                'from' => $paginated->firstItem(),
+                'to' => $paginated->lastItem(),
+                'trips' => $paginated->values(),
+            ]);
+        }
 
         return response()->json([
             'ok' => true,
