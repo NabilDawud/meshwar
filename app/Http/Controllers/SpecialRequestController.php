@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SpecialOffer;
 use App\Models\SpecialRequest;
+use App\Notifications\MishwarNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,24 +17,44 @@ class SpecialRequestController extends Controller
      * - For rider: list of their own requests with offers count.
      * - For driver: list of open requests available to bid on.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
 
         if ($user->role === 'driver') {
-            $requests = SpecialRequest::where(function ($query) use ($user) {
-                $query->where('status', 'open')
-                    ->orWhereHas('offers', function ($q) use ($user) {
-                        $q->where('driver_id', $user->id);
-                    });
-            })
-                ->with(['rider:id,name,phone', 'offers' => function ($q) use ($user) {
-                    $q->where('driver_id', $user->id);
-                }])
+            $tab = $request->query('tab', 'all');
+
+            $query = SpecialRequest::query();
+
+            if ($tab === 'accepted') {
+                $query->where(function ($q) use ($user) {
+                    $q->whereHas('offers', fn ($sub) => $sub->where('driver_id', $user->id)->where('status', 'accepted'))
+                        ->orWhere(function ($sub) use ($user) {
+                            $sub->where('status', 'accepted')
+                                ->whereHas('offers', fn ($o) => $o->where('driver_id', $user->id));
+                        });
+                });
+            } elseif ($tab === 'open') {
+                $query->where('status', 'open');
+            } else {
+                $query->where(function ($q) use ($user) {
+                    $q->where('status', 'open')
+                        ->orWhereHas('offers', fn ($sub) => $sub->where('driver_id', $user->id));
+                });
+            }
+
+            $query->with(['rider:id,name,phone', 'offers' => function ($q) use ($user) {
+                $q->where('driver_id', $user->id);
+            }])
                 ->withCount('offers')
-                ->latest()
-                ->get()
-                ->map(function (SpecialRequest $r) {
+                ->orderBy('id', 'desc');
+
+            $acceptedTotal = SpecialRequest::whereHas('offers', fn ($sub) => $sub->where('driver_id', $user->id)->where('status', 'accepted'))->count();
+            $openTotal = SpecialRequest::where('status', 'open')->count();
+
+            if ($request->has('page')) {
+                $paginated = $query->paginate(max(1, (int) $request->query('per_page', 8)));
+                $mapped = collect($paginated->items())->map(function (SpecialRequest $r) {
                     $myOffer = $r->offers->first();
                     $isAcceptedDriver = ($myOffer && $myOffer->status === 'accepted') || ($r->accepted_offer_id && $myOffer && $r->accepted_offer_id === $myOffer->id);
 
@@ -63,22 +84,83 @@ class SpecialRequestController extends Controller
                     ];
                 });
 
-            $acceptedCount = $requests->where('is_accepted', true)->where('status', 'accepted')->count();
+                return response()->json([
+                    'ok' => true,
+                    'count' => $paginated->count(),
+                    'accepted_jobs_count' => $acceptedTotal,
+                    'open_opportunities_count' => $openTotal,
+                    'current_page' => $paginated->currentPage(),
+                    'last_page' => $paginated->lastPage(),
+                    'total' => $paginated->total(),
+                    'per_page' => $paginated->perPage(),
+                    'from' => $paginated->firstItem(),
+                    'to' => $paginated->lastItem(),
+                    'requests' => $mapped,
+                ]);
+            }
+
+            $requests = $query->get()->map(function (SpecialRequest $r) {
+                $myOffer = $r->offers->first();
+                $isAcceptedDriver = ($myOffer && $myOffer->status === 'accepted') || ($r->accepted_offer_id && $myOffer && $r->accepted_offer_id === $myOffer->id);
+
+                return [
+                    'id' => $r->id,
+                    'origin_name' => $r->origin_name,
+                    'destination_name' => $r->destination_name,
+                    'departure_date' => $r->departure_date->format('Y-m-d'),
+                    'departure_window' => $r->departure_window,
+                    'seats_needed' => $r->seats_needed,
+                    'notes' => $r->notes,
+                    'status' => $r->status,
+                    'status_arabic' => $r->status_arabic,
+                    'rider_name' => $r->rider->name,
+                    'rider_phone' => $isAcceptedDriver ? $r->rider->phone : null,
+                    'can_call_rider' => $isAcceptedDriver,
+                    'is_accepted' => $isAcceptedDriver,
+                    'offers_count' => $r->offers_count,
+                    'my_offer' => $myOffer ? [
+                        'id' => $myOffer->id,
+                        'price_ils' => (float) $myOffer->price_ils,
+                        'notes' => $myOffer->notes,
+                        'status' => $myOffer->status,
+                        'status_arabic' => $myOffer->status_arabic,
+                    ] : null,
+                    'created_at' => $r->created_at->toISOString(),
+                ];
+            });
 
             return response()->json([
                 'ok' => true,
                 'count' => $requests->count(),
-                'accepted_jobs_count' => $acceptedCount,
+                'accepted_jobs_count' => $acceptedTotal,
+                'open_opportunities_count' => $openTotal,
                 'requests' => $requests,
             ]);
         }
 
         // Rider's own requests
-        $requests = SpecialRequest::where('rider_id', $user->id)
+        $query = SpecialRequest::where('rider_id', $user->id)
             ->with(['offers.driver.vehicle'])
-            ->latest()
-            ->get()
-            ->map(fn (SpecialRequest $r) => $this->formatRequestForRider($r));
+            ->orderBy('id', 'desc');
+
+        if ($request->has('page')) {
+            $paginated = $query->paginate(max(1, (int) $request->query('per_page', 10)));
+            $mapped = collect($paginated->items())->map(fn (SpecialRequest $r) => $this->formatRequestForRider($r));
+
+            return response()->json([
+                'ok' => true,
+                'count' => $paginated->count(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
+                'from' => $paginated->firstItem(),
+                'to' => $paginated->lastItem(),
+                'requests' => $mapped,
+            ]);
+        }
+
+        $requests = $query->get()->map(fn (SpecialRequest $r) => $this->formatRequestForRider($r));
 
         return response()->json([
             'ok' => true,
@@ -248,6 +330,38 @@ class SpecialRequestController extends Controller
 
         $specialRequest->load(['offers.driver.vehicle', 'offers.messages']);
 
+        // 4. Notify winning driver
+        $winningDriver = $chosenOffer->driver;
+        if ($winningDriver) {
+            $winningDriver->notify(new MishwarNotification(
+                title: '🎉 تهانينا! تم قبول عرضك للمشوار الخاص',
+                message: "وافق الراكب {$user->name} على عرضك بقيمة {$chosenOffer->price_ils} ₪. تم فك قفل رقم الهاتف للتنسيق المباشر.",
+                type: 'offer',
+                icon: '🎉',
+                actionUrl: route('driver.offers'),
+                extra: ['request_id' => $specialRequest->id, 'offer_id' => $chosenOffer->id]
+            ));
+        }
+
+        // 5. Notify other drivers that the request was closed
+        $otherOffers = SpecialOffer::where('request_id', $specialRequest->id)
+            ->where('id', '!=', $chosenOffer->id)
+            ->with('driver')
+            ->get();
+
+        foreach ($otherOffers as $other) {
+            if ($other->driver) {
+                $other->driver->notify(new MishwarNotification(
+                    title: 'تم إغلاق طلب المشوار الخاص ℹ️',
+                    message: "تم اختيار عرض آخر وإغلاق الطلب ({$specialRequest->origin_name} إلى {$specialRequest->destination_name}). نشكرك على تقديم عرضك.",
+                    type: 'offer',
+                    icon: 'ℹ️',
+                    actionUrl: route('driver.offers'),
+                    extra: ['request_id' => $specialRequest->id]
+                ));
+            }
+        }
+
         return response()->json([
             'ok' => true,
             'message' => 'تم قبول العرض بنجاح وتأكيد المشوار الخاص',
@@ -278,6 +392,19 @@ class SpecialRequestController extends Controller
         $specialRequest->update([
             'status' => 'completed',
         ]);
+
+        // Notify rider to rate the charter trip if completed by driver
+        $rider = $specialRequest->rider;
+        if ($rider && $user->id !== $rider->id) {
+            $rider->notify(new MishwarNotification(
+                title: 'اكتمل مشوارك الخاص بنجاح! ⭐',
+                message: "وصلت بالسلامة مع السائق {$specialRequest->acceptedOffer?->driver?->name}. شاركنا تقييمك للمشوار.",
+                type: 'rating',
+                icon: '⭐',
+                actionUrl: route('rides.history'),
+                extra: ['special_request_id' => $specialRequest->id]
+            ));
+        }
 
         return response()->json([
             'ok' => true,

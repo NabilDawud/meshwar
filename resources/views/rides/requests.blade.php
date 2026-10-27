@@ -109,6 +109,32 @@
         </template>
     </div>
 
+    <!-- Pagination Controls (Powered directly by Laravel Controller Pagination) -->
+    <div x-show="pagination.last_page > 1" class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm text-xs mt-1">
+        <div class="text-slate-500 font-medium">
+            عرض <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.from || 1"></span> إلى <span class="font-black text-slate-800 dark:text-slate-200 font-mono" x-text="pagination.to || requests.length"></span> من أصل <span class="font-black text-teal-600 dark:text-teal-400 font-mono" x-text="pagination.total"></span> طلب
+        </div>
+        <div class="flex items-center gap-1.5">
+            <button 
+                @click="changePage(pagination.current_page - 1)" 
+                :disabled="pagination.current_page <= 1"
+                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                السابق
+            </button>
+            <span class="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 font-bold font-mono text-teal-700 dark:text-teal-300">
+                <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
+            </span>
+            <button 
+                @click="changePage(pagination.current_page + 1)" 
+                :disabled="pagination.current_page >= pagination.last_page"
+                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+                التالي
+            </button>
+        </div>
+    </div>
+
     <!-- Create Special Request Modal (Bottom Slide-Up Sheet) -->
     <div x-show="showCreateModal" x-cloak class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
         <div @click.away="showCreateModal = false" class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 dark:border-slate-700 max-h-[90dvh] overflow-y-auto flex flex-col gap-4 shadow-2xl">
@@ -176,6 +202,13 @@ function specialRequestsState() {
         submitting: false,
         outboxRequest: null,
         syncNotification: null,
+        pagination: {
+            current_page: 1,
+            last_page: 1,
+            total: 0,
+            from: 1,
+            to: 10
+        },
         form: {
             origin_name: '',
             destination_name: '',
@@ -187,11 +220,18 @@ function specialRequestsState() {
 
         init() {
             this.checkOutbox();
-            this.fetchRequests();
+            this.fetchRequests(1);
 
             window.addEventListener('online', () => {
                 this.syncOutbox();
             });
+        },
+
+        changePage(p) {
+            if (p >= 1 && p <= this.pagination.last_page) {
+                this.fetchRequests(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         },
 
         checkOutbox() {
@@ -232,13 +272,20 @@ function specialRequestsState() {
             }
         },
 
-        async fetchRequests() {
+        async fetchRequests(page = 1) {
             this.loading = true;
             try {
-                const res = await fetch('{{ route('api.requests.index') }}');
+                const res = await fetch(`{{ route('api.requests.index') }}?page=${page}`);
                 const data = await res.json();
                 if (data.ok) {
                     this.requests = data.requests;
+                    this.pagination = {
+                        current_page: data.current_page || page,
+                        last_page: data.last_page || 1,
+                        total: data.total ?? data.count,
+                        from: data.from || 1,
+                        to: data.to || (data.requests || []).length
+                    };
                 }
             } catch (err) {
                 console.warn('Offline: viewing cached requests', err);

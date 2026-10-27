@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SpecialOffer;
 use App\Models\SpecialRequest;
+use App\Notifications\MishwarNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,6 +73,19 @@ class SpecialOfferController extends Controller
                 'client_mutation_id' => $mutationId,
             ]
         );
+
+        // Notify rider of new offer
+        $rider = $specialRequest->rider;
+        if ($rider) {
+            $rider->notify(new MishwarNotification(
+                title: 'عرض سعر جديد لمشوارك الخاص 💼',
+                message: "قدم السائق {$user->name} عرضاً بقيمة {$offer->price_ils} ₪ لطلبك ({$specialRequest->origin_name} إلى {$specialRequest->destination_name}).",
+                type: 'offer',
+                icon: '💼',
+                actionUrl: route('rides.requests'),
+                extra: ['request_id' => $specialRequest->id, 'offer_id' => $offer->id]
+            ));
+        }
 
         return response()->json([
             'ok' => true,

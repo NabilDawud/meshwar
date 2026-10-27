@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatMessage;
 use App\Models\SpecialOffer;
+use App\Notifications\MishwarNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -126,6 +127,21 @@ class ChatController extends Controller
         ]);
 
         $chatMessage->load('sender:id,name,role');
+
+        // Notify recipient of new chat message
+        $isDriver = $user->id === $offer->driver_id;
+        $recipient = $isDriver ? $offer->request->rider : $offer->driver;
+        if ($recipient) {
+            $preview = mb_substr($validated['message'], 0, 40).(mb_strlen($validated['message']) > 40 ? '...' : '');
+            $recipient->notify(new MishwarNotification(
+                title: "رسالة جديدة من {$user->name} 💬",
+                message: $preview,
+                type: 'chat',
+                icon: '💬',
+                actionUrl: route('chat.thread', $offer->id),
+                extra: ['offer_id' => $offer->id, 'sender_id' => $user->id]
+            ));
+        }
 
         return response()->json([
             'ok' => true,

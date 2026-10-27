@@ -8,6 +8,7 @@ use App\Http\Controllers\Driver\DriverRouteController;
 use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
 use App\Http\Controllers\LocationShareController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Rides\ActiveVehicleController;
 use App\Http\Controllers\Rides\TripPlannerController;
 use App\Http\Controllers\SpecialOfferController;
@@ -138,6 +139,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/driver/history', [TripHistoryController::class, 'driverHistory'])->name('api.driver.history');
     Route::post('/api/trips/rate', [TripRatingController::class, 'store'])->name('api.trips.rate');
     Route::post('/api/bookings/{id}/complete', [BookingController::class, 'completeBooking'])->name('api.bookings.complete');
+
+    // Notification APIs
+    Route::get('/api/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::post('/api/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.read');
+    Route::post('/api/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.read_all');
     Route::post('/api/requests/{id}/complete', [SpecialRequestController::class, 'complete'])->name('api.requests.complete');
 });
 
@@ -146,6 +152,7 @@ Route::get('/api/gazetteer', [GazetteerController::class, 'index'])->name('api.g
 
 // Active Transit Vehicles & Search (Open to Guests and Riders)
 Route::get('/api/rides/active-vehicles', [ActiveVehicleController::class, 'index'])->name('api.rides.active');
+Route::get('/api/rides/map-pins', [ActiveVehicleController::class, 'mapPins'])->name('api.rides.map_pins');
 
 // Trip Planner View & Offline Graph APIs (Open to Guests and Riders)
 Route::get('/plan', function () {

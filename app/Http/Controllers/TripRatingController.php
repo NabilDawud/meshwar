@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\SpecialRequest;
 use App\Models\TripRating;
+use App\Models\User;
+use App\Notifications\MishwarNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -105,6 +107,20 @@ class TripRatingController extends Controller
             'comment' => $validated['comment'] ?? null,
             'client_mutation_id' => $mutationId,
         ]);
+
+        // Notify driver of the new rating
+        $driver = User::find($driverId);
+        if ($driver) {
+            $stars = str_repeat('⭐', $validated['rating']);
+            $driver->notify(new MishwarNotification(
+                title: "تقييم جديد: {$stars} ({$validated['rating']}/5)",
+                message: "حصلت على تقييم {$validated['rating']} نجوم من الراكب {$user->name}".($tripRating->comment ? ": \"{$tripRating->comment}\"" : '.'),
+                type: 'rating',
+                icon: '⭐',
+                actionUrl: route('driver.history'),
+                extra: ['rating_id' => $tripRating->id, 'rating' => $tripRating->rating]
+            ));
+        }
 
         return response()->json([
             'ok' => true,
