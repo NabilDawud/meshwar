@@ -3,7 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Booking;
+use App\Models\ChatMessage;
 use App\Models\DriverRoute;
+use App\Models\SpecialOffer;
+use App\Models\SpecialRequest;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
@@ -11,12 +14,16 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database with a realistic driver, 10-seat vehicle, and real Gaza route.
+     * Seed the application's database with:
+     * - Realistic drivers & vehicles (including 10-seat 'ajala & private car)
+     * - Real Gaza transit route with 5 ordered stops
+     * - Confirmed rider booking
+     * - 1 open special request with 2 priced offers and a short chat thread
      */
     public function run(): void
     {
-        // 1. Seed Demo Driver User
-        $driver = User::updateOrCreate(
+        // 1. Seed Demo Driver 1 (Abu Ahmed)
+        $driver1 = User::updateOrCreate(
             ['email' => 'driver@meshwar.local'],
             [
                 'name' => 'أبو أحمد السائق',
@@ -27,8 +34,20 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 2. Seed Demo Rider User
-        User::updateOrCreate(
+        // 2. Seed Demo Driver 2 (Khaled - Private Car)
+        $driver2 = User::updateOrCreate(
+            ['email' => 'driver2@meshwar.local'],
+            [
+                'name' => 'خالد السائق (سيارة خاصة)',
+                'phone' => '0599654321',
+                'role' => 'driver',
+                'google_id' => 'seed-driver-google-2',
+                'avatar' => 'https://ui-avatars.com/api/?name=Khaled&background=2563EB&color=fff',
+            ]
+        );
+
+        // 3. Seed Demo Rider User (Mahmoud)
+        $rider = User::updateOrCreate(
             ['email' => 'rider@meshwar.local'],
             [
                 'name' => 'محمود الراكب',
@@ -39,9 +58,9 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 3. Seed 10-seat 'Ajala Vehicle with Exterior Street Recognition Photo
+        // 4. Seed 10-seat 'Ajala Vehicle for Driver 1
         Vehicle::updateOrCreate(
-            ['driver_id' => $driver->id],
+            ['driver_id' => $driver1->id],
             [
                 'type' => 'ajala',
                 'seat_count' => 10,
@@ -53,9 +72,23 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 4. Seed Real Route along Salah al-Din Corridor with Ordered Stops and Leg Fares
+        // 5. Seed Private Sedan Vehicle for Driver 2
+        Vehicle::updateOrCreate(
+            ['driver_id' => $driver2->id],
+            [
+                'type' => 'car',
+                'seat_count' => 4,
+                'license_plate' => 'غزة - 4567',
+                'status' => 'active',
+                'photos' => [
+                    '/images/sample-car.svg',
+                ],
+            ]
+        );
+
+        // 6. Seed Real Route along Salah al-Din Corridor with Ordered Stops and Leg Fares
         $route = DriverRoute::updateOrCreate(
-            ['driver_id' => $driver->id],
+            ['driver_id' => $driver1->id],
             [
                 'name' => 'رفح <-> غزة (عبر طريق صلاح الدين)',
                 'start_point' => 'دوار العودة - وسط رفح',
@@ -111,8 +144,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 5. Seed Real Confirmed Booking (Reflecting Driver Manifest & Pre-Trip State)
-        $rider = User::where('email', 'rider@meshwar.local')->first();
+        // 7. Seed Real Confirmed Booking (Reflecting Driver Manifest & Pre-Trip State)
         if ($rider && $route) {
             Booking::updateOrCreate(
                 [
@@ -129,5 +161,79 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        // 8. Seed Milestone 6: Open Special Request with 2 Driver Offers and a Short Chat
+        $specialRequest = SpecialRequest::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-special-req-1'],
+            [
+                'rider_id' => $rider->id,
+                'origin_name' => 'دوار العودة - وسط رفح',
+                'destination_name' => 'ميدان فلسطين (الساحة) - غزة',
+                'departure_date' => now()->format('Y-m-d'),
+                'departure_window' => '08:00 صباحاً',
+                'seats_needed' => 3,
+                'notes' => 'مشوار خاص لعائلة مع 3 حقائب كبيرة، يفضل سيارة مريحة ومكيفة',
+                'status' => 'open',
+            ]
+        );
+
+        // Driver 1 Offer (Abu Ahmed at 70 ILS)
+        $offer1 = SpecialOffer::updateOrCreate(
+            [
+                'request_id' => $specialRequest->id,
+                'driver_id' => $driver1->id,
+            ],
+            [
+                'price_ils' => 70.00,
+                'notes' => 'جاهز للانطلاق الساعة 08:00، سيارة واسعة ومريحة لجميع الحقائب',
+                'status' => 'pending',
+                'client_mutation_id' => 'seed-mut-offer-1',
+            ]
+        );
+
+        // Driver 2 Offer (Khaled at 85 ILS)
+        SpecialOffer::updateOrCreate(
+            [
+                'request_id' => $specialRequest->id,
+                'driver_id' => $driver2->id,
+            ],
+            [
+                'price_ils' => 85.00,
+                'notes' => 'سيارة خاصة حديثة ومكيفة، خدمة من الباب للباب',
+                'status' => 'pending',
+                'client_mutation_id' => 'seed-mut-offer-2',
+            ]
+        );
+
+        // Short Chat Thread on Offer 1 (Mahmoud & Abu Ahmed)
+        ChatMessage::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-chat-1'],
+            [
+                'offer_id' => $offer1->id,
+                'sender_id' => $rider->id,
+                'message' => 'السلام عليكم يا أبو أحمد، هل يوجد متسع لـ 3 حقائب كبيرة في السيارة؟',
+                'created_at' => now()->subMinutes(15),
+            ]
+        );
+
+        ChatMessage::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-chat-2'],
+            [
+                'offer_id' => $offer1->id,
+                'sender_id' => $driver1->id,
+                'message' => 'وعليكم السلام يا غالي، نعم الصندوق واسع ويتسع لجميع الحقائب براحة تامة.',
+                'created_at' => now()->subMinutes(10),
+            ]
+        );
+
+        ChatMessage::updateOrCreate(
+            ['client_mutation_id' => 'seed-mut-chat-3'],
+            [
+                'offer_id' => $offer1->id,
+                'sender_id' => $rider->id,
+                'message' => 'تمام ممتاز، شكراً جزيلاً لك.',
+                'created_at' => now()->subMinutes(5),
+            ]
+        );
     }
 }

@@ -3,12 +3,15 @@
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RoleChoiceController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Driver\DriverRouteController;
 use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
 use App\Http\Controllers\LocationShareController;
 use App\Http\Controllers\Rides\ActiveVehicleController;
 use App\Http\Controllers\Rides\TripPlannerController;
+use App\Http\Controllers\SpecialOfferController;
+use App\Http\Controllers\SpecialRequestController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -92,6 +95,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/location-shares/{id}/respond', [LocationShareController::class, 'respond'])->name('api.location.respond');
     Route::post('/api/location-shares/{id}/update', [LocationShareController::class, 'updatePosition'])->name('api.location.update');
     Route::post('/api/location-shares/{id}/end', [LocationShareController::class, 'end'])->name('api.location.end');
+
+    // Milestone 6: Special Requests (مراسلة), Offers & Direct Chat
+    Route::get('/requests', function () {
+        return view('rides.requests');
+    })->name('rides.requests');
+    Route::get('/requests/{id}', function ($id) {
+        return view('rides.request_detail', compact('id'));
+    })->name('rides.request_detail');
+
+    Route::get('/driver/offers', function () {
+        return view('driver.offers');
+    })->name('driver.offers');
+
+    Route::get('/chat/{offer_id}', function ($offer_id) {
+        return view('chat.thread', compact('offer_id'));
+    })->name('chat.thread');
+
+    // Special Requests & Offers APIs
+    Route::get('/api/requests', [SpecialRequestController::class, 'index'])->name('api.requests.index');
+    Route::post('/api/requests', [SpecialRequestController::class, 'store'])->name('api.requests.store');
+    Route::get('/api/requests/{id}', [SpecialRequestController::class, 'show'])->name('api.requests.show');
+    Route::post('/api/requests/{id}/offers', [SpecialOfferController::class, 'store'])->name('api.offers.store');
+    Route::post('/api/requests/{id}/offers/{offerId}/accept', [SpecialRequestController::class, 'acceptOffer'])->name('api.offers.accept');
+
+    // Chat APIs
+    Route::get('/api/chat/{offer_id}', [ChatController::class, 'getMessages'])->name('api.chat.messages');
+    Route::post('/api/chat/{offer_id}', [ChatController::class, 'sendMessage'])->name('api.chat.send');
 });
 
 // Verified OpenStreetMap Gaza Gazetteer
