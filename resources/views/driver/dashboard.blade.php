@@ -92,6 +92,18 @@
                 <span class="text-[11px] font-mono text-slate-400" x-text="lastPositionAge"></span>
             </div>
 
+            <!-- Pre-Trip Manifest Card -->
+            <a href="{{ route('driver.manifest') }}" class="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 flex items-center justify-between text-xs font-bold hover:bg-teal-100 transition">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">📋</span>
+                    <div>
+                        <span class="block">بيان الركاب وتأكيد الحجوزات</span>
+                        <span class="text-[10px] text-teal-600 dark:text-teal-400 font-normal">تأكيد الركاب والاتصال الهاتفي قبل بدء الرحلة</span>
+                    </div>
+                </div>
+                <span class="text-xs">استعراض ➔</span>
+            </a>
+
             <!-- Start / Stop Trip Toggle & Manual Broadcast -->
             <div class="grid grid-cols-2 gap-2">
                 <button 

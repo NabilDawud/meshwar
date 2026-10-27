@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Booking;
 use App\Models\DriverRoute;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -53,7 +54,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // 4. Seed Real Route along Salah al-Din Corridor with Ordered Stops and Leg Fares
-        DriverRoute::updateOrCreate(
+        $route = DriverRoute::updateOrCreate(
             ['driver_id' => $driver->id],
             [
                 'name' => 'رفح <-> غزة (عبر طريق صلاح الدين)',
@@ -109,5 +110,24 @@ class DatabaseSeeder extends Seeder
                 ],
             ]
         );
+
+        // 5. Seed Real Confirmed Booking (Reflecting Driver Manifest & Pre-Trip State)
+        $rider = User::where('email', 'rider@meshwar.local')->first();
+        if ($rider && $route) {
+            Booking::updateOrCreate(
+                [
+                    'rider_id' => $rider->id,
+                    'route_id' => $route->id,
+                ],
+                [
+                    'seats' => 1,
+                    'pickup_stop' => 'دوار بني سهيلا',
+                    'dropoff_stop' => 'ميدان فلسطين (الساحة)',
+                    'fare_ils' => 15.00,
+                    'status' => 'confirmed',
+                    'client_mutation_id' => 'seed-mut-booking-1',
+                ]
+            );
+        }
     }
 }

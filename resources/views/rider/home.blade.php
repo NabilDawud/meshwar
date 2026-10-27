@@ -150,6 +150,26 @@
                             </span>
                         </template>
                     </div>
+
+                    <!-- Book Seat Action (Offline & Online) -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                        <span class="text-xs font-bold text-slate-500">
+                            المقاعد الشاغرة: <span class="text-teal-600 dark:text-teal-400 font-black" x-text="vehicle.free_seats"></span>
+                        </span>
+                        @auth
+                            <button 
+                                @click.stop="bookSeat(vehicle)" 
+                                :disabled="vehicle.free_seats <= 0"
+                                class="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+                            >
+                                احجز مقعدك الآن ➔
+                            </button>
+                        @else
+                            <a href="{{ route('login') }}" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
+                                سجل لحجز مقعد ➔
+                            </a>
+                        @endauth
+                    </div>
                 </div>
             </template>
         </div>
@@ -323,6 +343,49 @@ function riderHome() {
             this.searchTo = '';
             this.searchTime = '';
             this.fetchVehicles();
+        },
+
+        async bookSeat(vehicle) {
+            const mutationId = 'mut_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const bookingData = {
+                route_id: vehicle.route_id,
+                seats: 1,
+                pickup_stop: vehicle.start_point,
+                dropoff_stop: vehicle.stops && vehicle.stops.length ? vehicle.stops[vehicle.stops.length - 1].name : null,
+                client_mutation_id: mutationId,
+                status: 'waiting_to_send'
+            };
+
+            if (!navigator.onLine) {
+                try {
+                    localStorage.setItem('mishwar_booking_outbox', JSON.stringify(bookingData));
+                } catch (e) {}
+                window.location.href = '{{ route('rider.bookings') }}';
+                return;
+            }
+
+            try {
+                const res = await fetch('{{ route('api.bookings.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(bookingData)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    window.location.href = '{{ route('rider.bookings') }}';
+                } else {
+                    alert(data.error || 'عذراً، لم تتوفر مقاعد كافية على هذه الرحلة');
+                }
+            } catch (e) {
+                try {
+                    localStorage.setItem('mishwar_booking_outbox', JSON.stringify(bookingData));
+                } catch (err) {}
+                window.location.href = '{{ route('rider.bookings') }}';
+            }
         }
     };
 }

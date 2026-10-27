@@ -22,7 +22,7 @@ class ActiveVehicleController extends Controller
         // Load active vehicles with their driver and active route
         $vehicles = Vehicle::query()
             ->where('status', 'active')
-            ->with(['driver.driverRoute'])
+            ->with(['driver.driverRoute.confirmedBookings'])
             ->get()
             ->filter(function (Vehicle $vehicle) use ($from, $to, $time) {
                 $driver = $vehicle->driver;
@@ -74,14 +74,18 @@ class ActiveVehicleController extends Controller
                 $route = $driver->driverRoute;
                 $firstStop = $route->stops[0] ?? ['name' => 'نقطة الانطلاق', 'lat' => 31.3456, 'lng' => 34.3182];
 
+                $bookedSeats = $route->confirmedBookings ? $route->confirmedBookings->sum('seats') : 0;
+                $freeSeats = max(0, (int) $vehicle->seat_count - $bookedSeats);
+
                 return [
                     'vehicle_id' => $vehicle->id,
+                    'route_id' => $route->id,
                     'driver_id' => $driver->id,
                     'driver_name' => $driver->name,
                     'vehicle_type' => $vehicle->type,
                     'vehicle_type_arabic' => $vehicle->type_arabic,
                     'seat_count' => $vehicle->seat_count,
-                    'free_seats' => $vehicle->seat_count, // All seats free in M3 until bookings in M4
+                    'free_seats' => $freeSeats,
                     'photo' => $vehicle->photos[0] ?? '/images/sample-ajala.svg',
                     'photos' => $vehicle->photos ?? [],
                     'license_plate' => $vehicle->license_plate,

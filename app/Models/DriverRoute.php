@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DriverRoute extends Model
 {
@@ -51,6 +52,41 @@ class DriverRoute extends Model
     public function driver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'driver_id');
+    }
+
+    /**
+     * Get bookings on this route.
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'route_id');
+    }
+
+    /**
+     * Get confirmed active bookings on this route.
+     */
+    public function confirmedBookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'route_id')->where('status', 'confirmed');
+    }
+
+    /**
+     * Get total seats currently booked.
+     */
+    public function bookedSeatsCount(): int
+    {
+        return (int) $this->confirmedBookings()->sum('seats');
+    }
+
+    /**
+     * Calculate remaining free seats based on driver's vehicle capacity.
+     */
+    public function freeSeatsCount(): int
+    {
+        $vehicle = $this->driver?->vehicle;
+        $totalCapacity = $vehicle ? (int) $vehicle->seat_count : 0;
+
+        return max(0, $totalCapacity - $this->bookedSeatsCount());
     }
 
     /**
