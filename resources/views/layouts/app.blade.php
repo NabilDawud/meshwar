@@ -7,6 +7,25 @@
 
     <title>{{ config('app.name', 'مشوار - غزة') }}</title>
 
+    <!-- Open Graph / WhatsApp / Facebook Preview Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="مشوار - شبكة المواصلات والرحلات في قطاع غزة">
+    <meta property="og:description" content="تتبع حي لمركبات الخطوط، حجز مقاعد فوري، مشاوير خاصة ومراسلة، ومخطط مسارات متكامل يعمل بدون إنترنت.">
+    <meta property="og:image" content="{{ asset('images/og-preview.png') }}">
+    <meta property="og:image:secure_url" content="{{ asset('images/og-preview.png') }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="مشوار - شبكة المواصلات الحية بغزة">
+    <meta property="og:site_name" content="مشوار">
+
+    <!-- Twitter / Telegram Preview Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="مشوار - شبكة المواصلات والرحلات في قطاع غزة">
+    <meta name="twitter:description" content="تتبع حي لمركبات الخطوط، حجز مقاعد فوري، مشاوير خاصة ومراسلة، ومخطط مسارات متكامل يعمل بدون إنترنت.">
+    <meta name="twitter:image" content="{{ asset('images/og-preview.png') }}">
+
     <!-- Favicon & Touch Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/favicon.svg">
