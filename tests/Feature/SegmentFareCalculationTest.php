@@ -14,7 +14,9 @@ class SegmentFareCalculationTest extends TestCase
     use RefreshDatabase;
 
     protected DriverRoute $route;
+
     protected User $driver;
+
     protected User $rider;
 
     protected function setUp(): void

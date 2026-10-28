@@ -13,7 +13,9 @@ class DriverDirectionControlTest extends TestCase
     use RefreshDatabase;
 
     protected User $driver;
+
     protected User $rider;
+
     protected DriverRoute $route;
 
     protected function setUp(): void

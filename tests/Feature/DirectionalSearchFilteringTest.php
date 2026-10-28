@@ -13,10 +13,15 @@ class DirectionalSearchFilteringTest extends TestCase
     use RefreshDatabase;
 
     protected DriverRoute $routeOutbound;
+
     protected DriverRoute $routeReturn;
+
     protected DriverRoute $routeOneWay;
+
     protected Vehicle $vehicleOutbound;
+
     protected Vehicle $vehicleReturn;
+
     protected Vehicle $vehicleOneWay;
 
     protected function setUp(): void
