@@ -41,6 +41,9 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'qa_mode' => env('QA_MODE', '0'),
+    'demo_mode' => env('DEMO_MODE', '0'),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

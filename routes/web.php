@@ -182,7 +182,7 @@ Route::get('/api/health', function () {
 
 // QA Login Endpoint (Zero-credential sign in for testing)
 Route::get('/api/qa-login', function (Request $request) {
-    if (env('QA_MODE') !== '1') {
+    if (config('app.qa_mode', env('QA_MODE')) !== '1') {
         abort(404);
     }
 
