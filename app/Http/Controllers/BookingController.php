@@ -92,21 +92,10 @@ class BookingController extends Controller
                 : null;
 
             if ($fare === null || $fare <= 0) {
-                // Auto-calculate fare from route stops based on dropoff stop and seats count
-                $stops = $route->stops ?? [];
+                // Auto-calculate fare from route stops based on pickup/dropoff stops and seats count
+                $pickup = $validated['pickup_stop'] ?? null;
                 $dropoff = $validated['dropoff_stop'] ?? null;
-                $matchedStop = null;
-                if ($dropoff && ! empty($stops)) {
-                    $matchedStop = collect($stops)->first(function ($s) use ($dropoff) {
-                        return isset($s['name']) && (str_contains($s['name'], $dropoff) || str_contains($dropoff, $s['name']));
-                    });
-                }
-                if (! $matchedStop && ! empty($stops)) {
-                    $matchedStop = end($stops);
-                }
-                if ($matchedStop && isset($matchedStop['fare_ils']) && (float) $matchedStop['fare_ils'] > 0) {
-                    $fare = (float) $matchedStop['fare_ils'] * $seatsRequested;
-                }
+                $fare = $route->calculateSegmentFare($pickup, $dropoff, $seatsRequested);
             }
 
             /** @var Booking $booking */
@@ -371,20 +360,11 @@ class BookingController extends Controller
         if (isset($validated['fare_ils']) && is_numeric($validated['fare_ils'])) {
             $updates['fare_ils'] = (float) $validated['fare_ils'];
         } elseif (($booking->fare_ils === null || (float) $booking->fare_ils <= 0) && $booking->route) {
-            $stops = $booking->route->stops ?? [];
-            $dropoff = $booking->dropoff_stop;
-            $matchedStop = null;
-            if ($dropoff && ! empty($stops)) {
-                $matchedStop = collect($stops)->first(function ($s) use ($dropoff) {
-                    return isset($s['name']) && (str_contains($s['name'], $dropoff) || str_contains($dropoff, $s['name']));
-                });
-            }
-            if (! $matchedStop && ! empty($stops)) {
-                $matchedStop = end($stops);
-            }
-            if ($matchedStop && isset($matchedStop['fare_ils']) && (float) $matchedStop['fare_ils'] > 0) {
-                $updates['fare_ils'] = (float) $matchedStop['fare_ils'] * max(1, (int) $booking->seats);
-            }
+            $updates['fare_ils'] = $booking->route->calculateSegmentFare(
+                $booking->pickup_stop,
+                $booking->dropoff_stop,
+                max(1, (int) $booking->seats)
+            );
         }
 
         $booking->update($updates);

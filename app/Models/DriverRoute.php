@@ -183,6 +183,87 @@ class DriverRoute extends Model
     }
 
     /**
+     * Find a stop's index and payload by landmark name or partial match.
+     *
+     * @return array{index: int, stop: array<string, mixed>}|null
+     */
+    public function findStopMatch(?string $name): ?array
+    {
+        if (! $name || empty($this->stops) || ! is_array($this->stops)) {
+            return null;
+        }
+
+        $trimmed = trim($name);
+
+        foreach ($this->stops as $index => $stop) {
+            $stopName = trim($stop['name'] ?? '');
+            if ($stopName === $trimmed) {
+                return ['index' => $index, 'stop' => $stop];
+            }
+        }
+
+        foreach ($this->stops as $index => $stop) {
+            $stopName = trim($stop['name'] ?? '');
+            if ($stopName !== '' && (str_contains($stopName, $trimmed) || str_contains($trimmed, $stopName))) {
+                return ['index' => $index, 'stop' => $stop];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Calculate dynamic segment fare between pickup and dropoff stops.
+     * Symmetrical across outbound and return directions.
+     */
+    public function calculateSegmentFare(?string $pickup, ?string $dropoff, int $seats = 1): float
+    {
+        $seats = max(1, $seats);
+        $stops = $this->stops ?? [];
+
+        if (empty($stops) || ! is_array($stops)) {
+            return round(5.0 * $seats, 2);
+        }
+
+        $pickupMatch = $this->findStopMatch($pickup);
+        $dropoffMatch = $this->findStopMatch($dropoff);
+
+        $pickupFare = null;
+        if ($pickupMatch !== null) {
+            $pickupFare = (float) ($pickupMatch['stop']['fare_ils'] ?? 0.0);
+        } elseif ($pickup === null || trim($pickup) === '' || trim($pickup) === trim($this->start_point ?? '')) {
+            $pickupFare = (float) ($stops[0]['fare_ils'] ?? 0.0);
+        }
+
+        $dropoffFare = null;
+        if ($dropoffMatch !== null) {
+            $dropoffFare = (float) ($dropoffMatch['stop']['fare_ils'] ?? 0.0);
+        } elseif ($dropoff === null || trim($dropoff) === '') {
+            $lastStop = end($stops);
+            $dropoffFare = (float) ($lastStop['fare_ils'] ?? 5.0);
+        }
+
+        // If both stops resolved
+        if ($pickupFare !== null && $dropoffFare !== null) {
+            $unitFare = abs($dropoffFare - $pickupFare);
+        } elseif ($dropoffFare !== null) {
+            $unitFare = $dropoffFare;
+        } elseif ($pickupFare !== null) {
+            $unitFare = $pickupFare;
+        } else {
+            $lastStop = end($stops);
+            $unitFare = (float) ($lastStop['fare_ils'] ?? 5.0);
+        }
+
+        // If unit fare evaluates to 0 (same stop or zero fare), ensure base minimum fare (2.0 ILS)
+        if ($unitFare <= 0) {
+            $unitFare = 2.0;
+        }
+
+        return round($unitFare * $seats, 2);
+    }
+
+    /**
      * Get human-friendly Arabic label for the active trip heading.
      */
     public function getActiveDirectionArabicAttribute(): string
