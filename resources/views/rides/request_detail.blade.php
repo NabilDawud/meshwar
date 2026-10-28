@@ -117,10 +117,17 @@
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <span class="font-bold text-sm text-slate-800 dark:text-slate-100" x-text="offer.driver.name"></span>
-                                <span class="text-[11px] text-amber-500 flex items-center gap-0.5">
-                                    <span>★</span>
-                                    <span class="font-mono font-bold" x-text="offer.driver.rating"></span>
-                                </span>
+                                <template x-if="offer.driver.rating && offer.driver.rating > 0">
+                                    <span class="text-[11px] text-amber-500 flex items-center gap-0.5">
+                                        <span>★</span>
+                                        <span class="font-mono font-bold" x-text="offer.driver.rating"></span>
+                                    </span>
+                                </template>
+                                <template x-if="!offer.driver.rating || offer.driver.rating === 0">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300">
+                                        جديد
+                                    </span>
+                                </template>
                             </div>
                             <span class="text-[11px] text-slate-400 font-mono" x-text="'عرض مقدم: ' + (offer.created_at ? new Date(offer.created_at).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'}) : '')"></span>
                         </div>

@@ -46,7 +46,7 @@
             <span class="text-[10px] text-slate-400 font-bold">متوسط التقييم</span>
             <div class="flex items-baseline justify-center gap-1">
                 <span class="text-amber-500 text-xs">★</span>
-                <span class="text-xl font-black text-slate-800 dark:text-slate-100 font-mono" x-text="stats.average_rating || '5.0'"></span>
+                <span class="text-xl font-black text-slate-800 dark:text-slate-100 font-mono" x-text="stats.ratings_count > 0 ? stats.average_rating : '—'"></span>
             </div>
             <span class="text-[9px] text-slate-400" x-text="'(' + (stats.ratings_count || 0) + ' تقييم)'"></span>
         </div>
@@ -160,7 +160,7 @@ function driverHistoryState() {
         stats: {
             total_completed_trips: 0,
             total_earned_ils: 0,
-            average_rating: '5.0',
+            average_rating: '—',
             ratings_count: 0,
         },
         loading: true,

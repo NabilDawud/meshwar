@@ -105,8 +105,11 @@
                         <div>
                             <div class="flex items-center gap-1.5">
                                 <span class="font-bold text-slate-800 dark:text-slate-200" x-text="trip.driver ? trip.driver.name : 'السائق'"></span>
-                                <template x-if="trip.driver && trip.driver.rating">
+                                <template x-if="trip.driver && trip.driver.rating && trip.driver.rating > 0">
                                     <span class="text-[10px] text-amber-500 font-mono font-bold">★ <span x-text="trip.driver.rating"></span></span>
+                                </template>
+                                <template x-if="trip.driver && (!trip.driver.rating || trip.driver.rating === 0)">
+                                    <span class="text-[10px] text-teal-600 dark:text-teal-400 font-medium">سائق جديد</span>
                                 </template>
                             </div>
                             <template x-if="trip.vehicle">

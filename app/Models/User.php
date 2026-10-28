@@ -66,7 +66,7 @@ class User extends Authenticatable
     {
         $avg = $this->ratingsReceived()->avg('rating');
 
-        return $avg !== null ? round((float) $avg, 1) : 4.9;
+        return $avg !== null ? round((float) $avg, 1) : 0.0;
     }
 
     /**

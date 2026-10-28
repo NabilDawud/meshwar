@@ -439,7 +439,8 @@ class SpecialRequestController extends Controller
                     'name' => $driver->name,
                     'phone' => $driver->phone, // Visible to rider on offers for tap-to-call
                     'can_call' => ! empty($driver->phone),
-                    'rating' => 4.9,
+                    'rating' => (float) $driver->average_rating,
+                    'ratings_count' => (int) $driver->ratings_count,
                 ],
                 'vehicle' => $vehicle ? [
                     'type' => $vehicle->type,
