@@ -83,21 +83,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check Dokku Deployment Credentials
-        id: check-secrets
-        run: |
-          if [ -n "${{ secrets.DOKKU_SSH_PRIVATE_KEY }}" ]; then
-            echo "configured=true" >> $GITHUB_OUTPUT
-            echo "Deploy credentials detected."
-          else
-            echo "configured=false" >> $GITHUB_OUTPUT
-            echo "::notice title=Dokku Deployment Credentials Missing::Set DOKKU_SSH_PRIVATE_KEY in GitHub Secrets to enable automatic deployments. See docs/DEPLOYMENT.md."
-          fi
-
       - name: Deploy to Dokku Server
-        if: steps.check-secrets.outputs.configured == 'true'
+        if: env.HAS_KEY != ''
+        env:
+          HAS_KEY: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
         uses: dokku/github-action@v1.6.0
         with:
-          git_remote_url: 'ssh://dokku@${{ secrets.DOKKU_HOST || "apps.taqat.academy" }}:22/meshwar'
+          git_remote_url: 'ssh://dokku@apps.taqat.academy:22/meshwar'
           ssh_private_key: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
           git_branch: 'main'
