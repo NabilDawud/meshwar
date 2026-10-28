@@ -22,12 +22,24 @@ class DriverRoute extends Model
         'start_point',
         'first_trip_time',
         'status',
+        'is_two_way',
+        'active_direction',
         'is_trip_active',
         'last_latitude',
         'last_longitude',
         'last_landmark',
         'last_position_at',
         'stops',
+    ];
+
+    /**
+     * The model's default values for attributes.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_two_way' => true,
+        'active_direction' => 'outbound',
     ];
 
     /**
@@ -39,6 +51,7 @@ class DriverRoute extends Model
     {
         return [
             'stops' => 'array',
+            'is_two_way' => 'boolean',
             'is_trip_active' => 'boolean',
             'last_latitude' => 'float',
             'last_longitude' => 'float',
@@ -142,6 +155,41 @@ class DriverRoute extends Model
             'off_route' => 'خارج الخط حالياً',
             'skip_work' => 'إجازة / متوقف اليوم',
             default => 'غير محدد',
+        };
+    }
+
+    /**
+     * Determine if this route is a two-way round-trip corridor.
+     */
+    public function isTwoWay(): bool
+    {
+        return (bool) ($this->is_two_way ?? true);
+    }
+
+    /**
+     * Determine if the active trip is currently in the outbound direction.
+     */
+    public function isOutbound(): bool
+    {
+        return ($this->active_direction ?? 'outbound') === 'outbound';
+    }
+
+    /**
+     * Determine if the active trip is currently in the return direction.
+     */
+    public function isReturn(): bool
+    {
+        return ($this->active_direction ?? 'outbound') === 'return';
+    }
+
+    /**
+     * Get human-friendly Arabic label for the active trip heading.
+     */
+    public function getActiveDirectionArabicAttribute(): string
+    {
+        return match ($this->active_direction ?? 'outbound') {
+            'return' => 'رحلة العودة',
+            default => 'رحلة الذهاب',
         };
     }
 }
