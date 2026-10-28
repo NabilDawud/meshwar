@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\DriverRoute;
+use App\Models\User;
 use App\Notifications\MishwarNotification;
 use App\Services\RouteDriftService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -142,17 +145,39 @@ class BookingController extends Controller
     }
 
     /**
+     * Get pre-formatted bookings collection for a rider.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public function getRiderBookings(User $user): Collection
+    {
+        return Booking::where('rider_id', $user->id)
+            ->with(['route.driver.vehicle', 'locationShare'])
+            ->latest()
+            ->get()
+            ->map(fn (Booking $b) => $this->formatBookingForRider($b));
+    }
+
+    /**
+     * Render the rider's bookings page with preloaded initial bookings.
+     */
+    public function riderBookingsPage(): View
+    {
+        $user = Auth::user();
+        $initialBookings = $this->getRiderBookings($user);
+
+        return view('rider.bookings', [
+            'initialBookings' => $initialBookings,
+        ]);
+    }
+
+    /**
      * Get the authenticated rider's bookings with driver contact and drift warning.
      */
     public function riderBookings(): JsonResponse
     {
         $user = Auth::user();
-
-        $bookings = Booking::where('rider_id', $user->id)
-            ->with(['route.driver.vehicle', 'locationShare'])
-            ->latest()
-            ->get()
-            ->map(fn (Booking $b) => $this->formatBookingForRider($b));
+        $bookings = $this->getRiderBookings($user);
 
         return response()->json([
             'ok' => true,
@@ -405,7 +430,9 @@ class BookingController extends Controller
         $driver = $route?->driver;
         $vehicle = $driver?->vehicle;
 
-        $driftInfo = $route ? $this->driftService->checkDrift($route) : ['drifting' => false];
+        // Route drift calculation ONLY needed for active rides (confirmed or boarded)
+        $isRideActive = in_array($booking->status, ['confirmed', 'boarded']);
+        $driftInfo = ($isRideActive && $route) ? $this->driftService->checkDrift($route) : ['drifting' => false];
 
         // Privacy Rule: driver phone is disclosed when booking is confirmed, boarded, or completed
         $driverPhone = in_array($booking->status, ['confirmed', 'boarded', 'completed']) ? $driver?->phone : null;

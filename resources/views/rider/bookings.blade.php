@@ -3,7 +3,7 @@
 @section('title', 'حجوزاتي - مشوار')
 
 @section('content')
-<div class="p-4 flex flex-col gap-4 max-w-lg mx-auto" x-data="riderBookingsState()" x-init="init()">
+<div class="p-4 flex flex-col gap-4 max-w-lg mx-auto" x-data="riderBookingsState({ initialBookings: @js($initialBookings ?? []) })" x-init="init()">
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
@@ -202,29 +202,46 @@
 @push('scripts')
 <script src="/js/gaza-geo-sync.js"></script>
 <script>
-function riderBookingsState() {
+function riderBookingsState(config) {
+    const serverBookings = (config && config.initialBookings) || [];
+    let cachedBookings = [];
+    try {
+        const raw = localStorage.getItem('mishwar_cached_bookings');
+        if (raw) cachedBookings = JSON.parse(raw);
+    } catch (e) {}
+
+    const startingBookings = serverBookings.length > 0 ? serverBookings : cachedBookings;
+
     return {
-        bookings: [],
-        loading: false,
+        bookings: startingBookings,
+        loading: startingBookings.length === 0,
         outboxBooking: null,
         syncNotification: null,
         locationInterval: null,
 
         init() {
             this.checkOutbox();
-            this.fetchBookings();
+            if (this.bookings.length === 0) {
+                this.fetchBookings(true);
+            } else {
+                // Background sync silently without blocking UI
+                setTimeout(() => {
+                    if (navigator.onLine) this.fetchBookings(false);
+                }, 1500);
+            }
 
             // Listen for network reconnection to trigger outbox sync
             window.addEventListener('online', () => {
                 this.syncOutbox();
+                this.fetchBookings(false);
             });
 
-            // Periodic refresh
+            // Periodic background refresh
             setInterval(() => {
                 if (navigator.onLine) {
-                    this.fetchBookings();
+                    this.fetchBookings(false);
                 }
-            }, 20000);
+            }, 15000);
         },
 
         checkOutbox() {
@@ -270,7 +287,7 @@ function riderBookingsState() {
                         ok: true,
                         message: 'تم تأكيد حجزك بنجاح بعد استعادة الاتصال بالإنترنت'
                     };
-                    this.fetchBookings();
+                    this.fetchBookings(false);
                 } else {
                     this.syncNotification = {
                         ok: false,
@@ -284,13 +301,18 @@ function riderBookingsState() {
             }
         },
 
-        async fetchBookings() {
-            this.loading = true;
+        async fetchBookings(showLoader = false) {
+            if (showLoader && this.bookings.length === 0) {
+                this.loading = true;
+            }
             try {
                 const res = await fetch('{{ route('api.rider.bookings') }}');
                 const data = await res.json();
                 if (data.ok) {
                     this.bookings = data.bookings;
+                    try {
+                        localStorage.setItem('mishwar_cached_bookings', JSON.stringify(data.bookings));
+                    } catch (e) {}
                     this.manageLocationSharingLoop();
                 }
             } catch (err) {

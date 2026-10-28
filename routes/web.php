@@ -92,9 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/driver/bookings/{id}/confirm', [BookingController::class, 'confirmByDriver'])->name('api.driver.bookings.confirm');
 
     // Rider Bookings View & APIs
-    Route::get('/bookings', function () {
-        return view('rider.bookings');
-    })->name('rider.bookings');
+    Route::get('/bookings', [BookingController::class, 'riderBookingsPage'])->name('rider.bookings');
     Route::get('/api/rider/bookings', [BookingController::class, 'riderBookings'])->name('api.rider.bookings');
     Route::post('/api/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
 
