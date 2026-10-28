@@ -388,12 +388,9 @@ function riderBookingsState() {
                         navigator.geolocation.getCurrentPosition(
                             pos => sendUpdate(pos.coords.latitude, pos.coords.longitude),
                             err => {
-                                // Fallback simulation coordinates for Gaza in environments where GPS is unavailable
-                                const mockLat = 31.3456 + (Math.random() - 0.5) * 0.001;
-                                const mockLng = 34.3182 + (Math.random() - 0.5) * 0.001;
-                                sendUpdate(mockLat, mockLng);
+                                console.warn('GPS location unavailable, sharing paused:', err.message);
                             },
-                            { timeout: 5000, enableHighAccuracy: true }
+                            { timeout: 10000, enableHighAccuracy: true, maximumAge: 10000 }
                         );
                     }
                 }, 10000);

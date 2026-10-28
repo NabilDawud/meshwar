@@ -95,6 +95,15 @@
                 <span class="text-[11px] font-mono text-slate-400" x-text="lastPositionAge"></span>
             </div>
 
+            <!-- GPS Warning Alert -->
+            <div x-show="gpsWarning" x-cloak class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-xs flex items-center justify-between">
+                <span class="flex items-center gap-1.5 leading-relaxed">
+                    <span>⚠️</span>
+                    <span x-text="gpsWarning"></span>
+                </span>
+                <button type="button" @click="gpsWarning = null" class="text-xs px-1.5 font-bold">✕</button>
+            </div>
+
             <!-- Pre-Trip Manifest Card -->
             <a href="{{ route('driver.manifest') }}" class="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 flex items-center justify-between text-xs font-bold hover:bg-teal-100 transition">
                 <div class="flex items-center gap-2">
@@ -267,7 +276,8 @@ function driverDashboard(initialData) {
         lastLandmark: '{{ $route->last_landmark ?? '' }}',
         lastPositionAge: '{{ $route->position_age_arabic ?? 'غير محدد' }}',
         isBroadcasting: false,
-        lastSentPoint: null,
+        gpsWarning: null,
+        lastSentPoint: @if($route->last_latitude && $route->last_longitude) { lat: {{ $route->last_latitude }}, lng: {{ $route->last_longitude }} } @else null @endif,
         tripTimer: null,
 
         async updateStatus(newStatus) {
@@ -308,22 +318,23 @@ function driverDashboard(initialData) {
                     clearInterval(this.tripTimer);
                     this.tripTimer = null;
                 }
-                this.lastSentPoint = null;
-                try {
-                    await fetch('{{ route('api.driver.position') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            lat: {{ $route->last_latitude ?? 31.3456 }},
-                            lng: {{ $route->last_longitude ?? 34.3182 }},
-                            is_trip_active: false
-                        })
-                    });
-                } catch (e) {}
+                if (this.lastSentPoint) {
+                    try {
+                        await fetch('{{ route('api.driver.position') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                lat: this.lastSentPoint.lat,
+                                lng: this.lastSentPoint.lng,
+                                is_trip_active: false
+                            })
+                        });
+                    } catch (e) {}
+                }
             }
         },
 
@@ -359,6 +370,7 @@ function driverDashboard(initialData) {
                         this.lastLandmark = data.position.landmark;
                         this.lastPositionAge = data.position.position_age_arabic;
                         this.lastSentPoint = { lat, lng, sentAt: Date.now() };
+                        this.gpsWarning = null;
                     }
                 } catch (err) {
                     console.warn('Offline: GPS position saved in outbox', err);
@@ -368,13 +380,27 @@ function driverDashboard(initialData) {
             };
 
             if ('geolocation' in navigator) {
+                this.isBroadcasting = true;
                 navigator.geolocation.getCurrentPosition(
-                    pos => sendPos(pos.coords.latitude, pos.coords.longitude, 'موقع حي GPS'),
-                    err => sendPos({{ $route->last_latitude ?? 31.3456 }}, {{ $route->last_longitude ?? 34.3182 }}, '{{ $route->last_landmark ?? 'دوار بني سهيلا' }}'),
-                    { timeout: 5000, enableHighAccuracy: true }
+                    pos => {
+                        this.gpsWarning = null;
+                        sendPos(pos.coords.latitude, pos.coords.longitude, 'موقع حي GPS');
+                    },
+                    err => {
+                        this.isBroadcasting = false;
+                        if (err.code === 1) {
+                            this.gpsWarning = 'تم رفض الإذن بالوصول للموقع، يرجى تفعيل إذن الموقع في إعدادات المتصفح';
+                        } else if (err.code === 2) {
+                            this.gpsWarning = 'إشارة GPS غير متوفرة حالياً، يرجى التأكد من تشغيل الموقع بالهاتف';
+                        } else {
+                            this.gpsWarning = 'استغرق تحديد موقع GPS وقتاً أطول من المعتاد، يرجى المحاولة في مكان مفتوح';
+                        }
+                    },
+                    { timeout: 10000, enableHighAccuracy: true, maximumAge: 10000 }
                 );
             } else {
-                sendPos({{ $route->last_latitude ?? 31.3456 }}, {{ $route->last_longitude ?? 34.3182 }}, '{{ $route->last_landmark ?? 'دوار بني سهيلا' }}');
+                this.isBroadcasting = false;
+                this.gpsWarning = 'المتصفح الحالي لا يدعم خدمة تحديد الموقع الجغرافي GPS';
             }
         }
     };
