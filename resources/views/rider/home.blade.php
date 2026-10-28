@@ -80,7 +80,7 @@
                     <button 
                         type="button" 
                         @click="resetSearch" 
-                        x-show="searchFrom || searchTo || searchTime"
+                        x-show="searchFrom || searchTo || searchTime || sameDirectionOnly"
                         class="px-2.5 h-10 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300"
                         title="إعادة ضبط"
                     >
@@ -88,6 +88,20 @@
                     </button>
                 </div>
             </div>
+        </div>
+
+        <!-- Directional Filter Toggle (Option 2) -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60" x-show="searchFrom && searchTo">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700 dark:text-slate-300">
+                <input 
+                    type="checkbox" 
+                    x-model="sameDirectionOnly" 
+                    @change="fetchVehicles(1)"
+                    class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-600"
+                >
+                <span>نفس اتجاه رحلتي فقط</span>
+            </label>
+            <span class="text-[11px] text-slate-400">إخفاء المركبات التي تسير بالاتجاه المعاكس</span>
         </div>
     </div>
 
@@ -138,10 +152,25 @@
                             </div>
                         </div>
 
-                        <!-- Schedule Badge -->
-                        <span class="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-bold shrink-0">
-                            ⏰ <span x-text="vehicle.first_trip_time"></span>
-                        </span>
+                        <!-- Schedule & Direction Badges -->
+                        <div class="flex flex-col items-end gap-1.5 shrink-0">
+                            <span class="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-bold">
+                                ⏰ <span x-text="vehicle.first_trip_time"></span>
+                            </span>
+
+                            <template x-if="vehicle.direction_match === 'active'">
+                                <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-1">
+                                    <span>🟢</span>
+                                    <span x-text="vehicle.direction_match_arabic || 'متجه لوجهتك الآن'"></span>
+                                </span>
+                            </template>
+                            <template x-if="vehicle.direction_match === 'return_leg'">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 flex items-center gap-1">
+                                    <span>🔄</span>
+                                    <span x-text="vehicle.direction_match_arabic || 'على خط العودة'"></span>
+                                </span>
+                            </template>
+                        </div>
                     </div>
 
                     <!-- Strictly Last Recorded Position + Age (NO Speculative ETAs) -->
@@ -170,9 +199,16 @@
 
                     <!-- Book Seat Action (Offline & Online) -->
                     <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
-                        <span class="text-xs font-bold text-slate-500">
-                            المقاعد الشاغرة: <span class="text-teal-600 dark:text-teal-400 font-black" x-text="vehicle.free_seats"></span>
-                        </span>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-slate-500">
+                                المقاعد الشاغرة: <span class="text-teal-600 dark:text-teal-400 font-black" x-text="vehicle.free_seats"></span>
+                            </span>
+                            <template x-if="vehicle.segment_fare_ils">
+                                <span class="text-[11px] font-bold text-teal-700 dark:text-teal-300 mt-0.5">
+                                    الأجرة لمشوارك: <b class="font-mono text-xs" x-text="vehicle.segment_fare_ils"></b> ₪
+                                </span>
+                            </template>
+                        </div>
                         @auth
                             @if(Auth::user()->role === 'driver')
                                 <span class="text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-2.5 py-1 rounded-xl border border-teal-200 dark:border-teal-800">
@@ -180,7 +216,7 @@
                                 </span>
                             @else
                                 <button 
-                                    @click.stop="bookSeat(vehicle)" 
+                                    @click.stop="openBookingModal(vehicle)" 
                                     :disabled="vehicle.free_seats <= 0"
                                     class="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
                                 >
@@ -246,6 +282,127 @@
             <span>جرب تغيير نقطة الانطلاق أو الوصول، أو اضغط على إلغاء التصفية.</span>
         </div>
     </div>
+
+    <!-- Interactive Seat Reservation Modal -->
+    <div 
+        x-show="showBookingModal" 
+        x-cloak
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm"
+        @keydown.escape.window="closeBookingModal()"
+    >
+        <div 
+            class="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col gap-4 text-right"
+            @click.away="closeBookingModal()"
+        >
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+                <div>
+                    <h3 class="text-base font-black text-slate-800 dark:text-slate-100">تأكيد حجز مقعد</h3>
+                    <span class="text-xs text-slate-400" x-text="modalVehicle?.route_name"></span>
+                </div>
+                <button type="button" @click="closeBookingModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 font-bold hover:bg-slate-200 transition">✕</button>
+            </div>
+
+            <!-- Vehicle & Direction Summary -->
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🚐</span>
+                    <div>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 block" x-text="modalVehicle?.vehicle_type_arabic"></span>
+                        <span class="text-slate-400" x-text="modalVehicle?.driver_name"></span>
+                    </div>
+                </div>
+                <span 
+                    class="text-[11px] font-black px-2.5 py-1 rounded-full"
+                    :class="modalVehicle?.direction_match === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'"
+                    x-text="modalVehicle?.direction_match_arabic"
+                ></span>
+            </div>
+
+            <!-- Pickup Stop Selection -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">نقطة الركوب (الصعود):</label>
+                <select 
+                    x-model="modalPickup" 
+                    @change="calculateModalFare()"
+                    class="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
+                >
+                    <template x-for="(stop, sIdx) in (modalVehicle?.stops || [])" :key="'p_' + sIdx">
+                        <option :value="stop.name" x-text="stop.name + (stop.fare_ils !== undefined ? ' (' + stop.fare_ils + ' ₪)' : '')"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Dropoff Stop Selection -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300">نقطة النزول (الوصول):</label>
+                <select 
+                    x-model="modalDropoff" 
+                    @change="calculateModalFare()"
+                    class="w-full h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
+                >
+                    <template x-for="(stop, sIdx) in (modalVehicle?.stops || [])" :key="'d_' + sIdx">
+                        <option :value="stop.name" x-text="stop.name + (stop.fare_ils !== undefined ? ' (' + stop.fare_ils + ' ₪)' : '')"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Seat Count Selector -->
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                <div>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">عدد المقاعد المطلوبة</span>
+                    <span class="text-[10px] text-slate-400">المتاح: <b x-text="modalVehicle?.free_seats"></b> مقاعد</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button 
+                        type="button" 
+                        @click="if (modalSeats > 1) { modalSeats--; calculateModalFare(); }"
+                        class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 active:scale-95"
+                    >-</button>
+                    <span class="w-8 text-center font-black font-mono text-sm text-teal-600 dark:text-teal-400" x-text="modalSeats"></span>
+                    <button 
+                        type="button" 
+                        @click="if (modalSeats < (modalVehicle?.free_seats || 1)) { modalSeats++; calculateModalFare(); }"
+                        class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 active:scale-95"
+                    >+</button>
+                </div>
+            </div>
+
+            <!-- Total Fare Dynamic Breakdown -->
+            <div class="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">💰</span>
+                    <div>
+                        <span class="font-bold text-teal-900 dark:text-teal-100 block">الأجرة المحسوبة للمسار:</span>
+                        <span class="text-[10px] text-teal-700 dark:text-teal-300 font-mono" x-text="modalUnitFare + ' ₪ للمقعد الواحد × ' + modalSeats + ' مقاعد'"></span>
+                    </div>
+                </div>
+                <div class="text-base font-black font-mono text-teal-700 dark:text-teal-300">
+                    <span x-text="modalTotalFare"></span> ₪
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button 
+                    type="button" 
+                    @click="closeBookingModal()"
+                    class="h-11 rounded-2xl border border-slate-200 dark:border-slate-700 font-bold text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition"
+                >
+                    إلغاء
+                </button>
+                <button 
+                    type="button" 
+                    @click="confirmModalBooking()"
+                    :disabled="isBookingSubmitting"
+                    class="h-11 rounded-2xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-black text-xs shadow-md transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                    <span x-show="!isBookingSubmitting">تأكيد الحجز ➔</span>
+                    <span x-show="isBookingSubmitting">جاري الحجز...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -259,8 +416,17 @@ function riderHome() {
         searchFrom: '',
         searchTo: '',
         searchTime: '',
+        sameDirectionOnly: false,
         selectedVehicleId: null,
         loading: true,
+        showBookingModal: false,
+        modalVehicle: null,
+        modalPickup: '',
+        modalDropoff: '',
+        modalSeats: 1,
+        modalUnitFare: 0,
+        modalTotalFare: 0,
+        isBookingSubmitting: false,
         map: null,
         markers: [],
         pagination: {
@@ -387,6 +553,7 @@ function riderHome() {
                 if (this.searchFrom) params.append('from', this.searchFrom);
                 if (this.searchTo) params.append('to', this.searchTo);
                 if (this.searchTime) params.append('time', this.searchTime);
+                if (this.sameDirectionOnly) params.append('same_direction_only', '1');
 
                 const res = await fetch(`{{ route('api.rides.active') }}?${params.toString()}`);
                 const data = await res.json();
@@ -401,7 +568,7 @@ function riderHome() {
                     };
 
                     // Cache default first page to eliminate any reload delay
-                    if (page === 1 && !this.searchFrom && !this.searchTo && !this.searchTime) {
+                    if (page === 1 && !this.searchFrom && !this.searchTo && !this.searchTime && !this.sameDirectionOnly) {
                         try {
                             localStorage.setItem('meshwar_active_vehicles_cache', JSON.stringify(data));
                         } catch (e) {}
@@ -476,19 +643,74 @@ function riderHome() {
             this.searchFrom = '';
             this.searchTo = '';
             this.searchTime = '';
+            this.sameDirectionOnly = false;
             this.fetchVehicles(1);
         },
 
-        async bookSeat(vehicle) {
+        openBookingModal(vehicle) {
+            this.modalVehicle = vehicle;
+            this.modalSeats = 1;
+            const stops = vehicle.stops || [];
+
+            // Determine default pickup stop
+            if (this.searchFrom && stops.some(s => s.name === this.searchFrom)) {
+                this.modalPickup = this.searchFrom;
+            } else if (stops.length > 0) {
+                this.modalPickup = stops[0].name;
+            } else {
+                this.modalPickup = vehicle.start_point || '';
+            }
+
+            // Determine default dropoff stop
+            if (this.searchTo && stops.some(s => s.name === this.searchTo)) {
+                this.modalDropoff = this.searchTo;
+            } else if (stops.length > 0) {
+                this.modalDropoff = stops[stops.length - 1].name;
+            } else {
+                this.modalDropoff = '';
+            }
+
+            this.calculateModalFare();
+            this.showBookingModal = true;
+        },
+
+        calculateModalFare() {
+            if (!this.modalVehicle) return;
+            const stops = this.modalVehicle.stops || [];
+            const pickupStop = stops.find(s => s.name === this.modalPickup);
+            const dropoffStop = stops.find(s => s.name === this.modalDropoff);
+
+            const pFare = (pickupStop && pickupStop.fare_ils !== undefined) ? Number(pickupStop.fare_ils) : 0;
+            const dFare = (dropoffStop && dropoffStop.fare_ils !== undefined) ? Number(dropoffStop.fare_ils) : 0;
+
+            let diff = Math.abs(dFare - pFare);
+            if (diff <= 0) {
+                diff = dFare || 2;
+            }
+            if (diff < 2) {
+                diff = 2;
+            }
+
+            this.modalUnitFare = diff;
+            this.modalTotalFare = diff * this.modalSeats;
+        },
+
+        closeBookingModal() {
+            this.showBookingModal = false;
+            this.modalVehicle = null;
+        },
+
+        async confirmModalBooking() {
+            if (!this.modalVehicle) return;
+            this.isBookingSubmitting = true;
+
             const mutationId = 'mut_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            const dropoffStop = vehicle.stops && vehicle.stops.length ? vehicle.stops[vehicle.stops.length - 1] : null;
-            const fareIls = dropoffStop && dropoffStop.fare_ils ? dropoffStop.fare_ils : 0;
             const bookingData = {
-                route_id: vehicle.route_id,
-                seats: 1,
-                pickup_stop: vehicle.start_point,
-                dropoff_stop: dropoffStop ? dropoffStop.name : null,
-                fare_ils: fareIls,
+                route_id: this.modalVehicle.route_id,
+                seats: this.modalSeats,
+                pickup_stop: this.modalPickup,
+                dropoff_stop: this.modalDropoff,
+                fare_ils: this.modalTotalFare,
                 client_mutation_id: mutationId,
                 status: 'waiting_to_send'
             };
@@ -497,6 +719,7 @@ function riderHome() {
                 try {
                     localStorage.setItem('mishwar_booking_outbox', JSON.stringify(bookingData));
                 } catch (e) {}
+                this.closeBookingModal();
                 window.location.href = '{{ route('rider.bookings') }}';
                 return;
             }
@@ -513,6 +736,7 @@ function riderHome() {
                 });
                 const data = await res.json();
                 if (data.ok) {
+                    this.closeBookingModal();
                     window.location.href = '{{ route('rider.bookings') }}';
                 } else {
                     alert(data.error || 'عذراً، لم تتوفر مقاعد كافية على هذه الرحلة');
@@ -521,7 +745,10 @@ function riderHome() {
                 try {
                     localStorage.setItem('mishwar_booking_outbox', JSON.stringify(bookingData));
                 } catch (err) {}
+                this.closeBookingModal();
                 window.location.href = '{{ route('rider.bookings') }}';
+            } finally {
+                this.isBookingSubmitting = false;
             }
         }
     };

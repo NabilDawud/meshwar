@@ -134,6 +134,10 @@
                         <span class="text-slate-400 block text-[11px]">نوع المركبة:</span>
                         <span class="font-bold text-slate-800 dark:text-slate-200" x-text="b.vehicle ? b.vehicle.type_arabic : 'مركبة'"></span>
                     </div>
+                    <div class="col-span-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+                        <span class="text-slate-400 text-[11px]">الأجرة المحسوبة للمسار:</span>
+                        <span class="font-black text-teal-600 dark:text-teal-400 font-mono text-xs" x-text="b.fare_ils ? b.fare_ils + ' ₪' : 'حسب الاتفاق'"></span>
+                    </div>
                 </div>
 
                 <!-- Driver Contact Card (Privacy Enforced: Phone unlocked only when confirmed) -->
