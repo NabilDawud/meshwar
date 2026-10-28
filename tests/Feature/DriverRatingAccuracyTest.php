@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\DriverRoute;
 use App\Models\SpecialOffer;
 use App\Models\SpecialRequest;
 use App\Models\TripRating;

@@ -147,7 +147,7 @@ class BookingController extends Controller
     /**
      * Get pre-formatted bookings collection for a rider.
      *
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
     public function getRiderBookings(User $user): Collection
     {
