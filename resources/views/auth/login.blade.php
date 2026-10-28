@@ -27,10 +27,10 @@
             تسجيل الدخول يتم بأمان عبر حساب Google المعتمد دون الحاجة لكلمات مرور إضافية.
         </p>
 
-        @if(app()->environment('local') || env('QA_MODE') === '1')
+        @if(app()->environment('local') || env('QA_MODE') === '1' || env('DEMO_MODE') === '1' || empty(config('services.google.client_id')))
             <!-- Local / QA Testing Quick Login -->
             <div class="w-full pt-4 border-t border-slate-100 dark:border-slate-700/80 flex flex-col gap-2">
-                <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">⚡ بيئة التطوير (تسجيل تجريبي سريع)</span>
+                <span class="text-xs font-semibold text-amber-600 dark:text-amber-400">⚡ تسجيل دخول تجريبي سريع</span>
                 <div class="grid grid-cols-2 gap-2 mt-1">
                     <a href="{{ route('auth.google.mock', ['role' => 'rider']) }}" class="min-h-[44px] flex items-center justify-center text-xs font-bold bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 rounded-xl hover:bg-teal-100 transition active:scale-95">
                         دخول كـ راكب
