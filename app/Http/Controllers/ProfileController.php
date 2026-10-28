@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -55,6 +56,23 @@ class ProfileController extends Controller
         ]);
 
         $cleanName = trim(strip_tags($validated['name']));
+        $isPhoneChanging = $validated['phone'] !== $user->phone;
+
+        if ($isPhoneChanging) {
+            $cacheKey = "user_phone_updates_{$user->id}";
+            $history = Cache::get($cacheKey, []);
+            $cutoff = now()->subHours(24)->timestamp;
+            $recentUpdates = array_filter($history, fn ($timestamp) => $timestamp > $cutoff);
+
+            if (count($recentUpdates) >= 3) {
+                throw ValidationException::withMessages([
+                    'phone' => 'لقد استنفدت الحد المسموح لتعديل رقم الجوال (3 مرات خلال 24 ساعة). يرجى المحاولة لاحقاً.',
+                ]);
+            }
+
+            $recentUpdates[] = now()->timestamp;
+            Cache::put($cacheKey, $recentUpdates, now()->addHours(24));
+        }
 
         $user->update([
             'name' => $cleanName,

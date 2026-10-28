@@ -128,4 +128,65 @@ class ProfileTest extends TestCase
         $rider->refresh();
         $this->assertEquals('راكب المشوار', $rider->name);
     }
+
+    public function test_phone_update_is_rate_limited_to_three_times_in_24_hours(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'سامي يوسف',
+            'phone' => '0599000000',
+            'role' => 'rider',
+        ]);
+
+        // Change 1
+        $this->actingAs($user)->post('/profile', [
+            'name' => 'سامي يوسف',
+            'phone' => '0599111111',
+        ])->assertRedirect('/profile')->assertSessionHasNoErrors();
+
+        // Change 2
+        $this->actingAs($user)->post('/profile', [
+            'name' => 'سامي يوسف',
+            'phone' => '0599222222',
+        ])->assertRedirect('/profile')->assertSessionHasNoErrors();
+
+        // Change 3
+        $this->actingAs($user)->post('/profile', [
+            'name' => 'سامي يوسف',
+            'phone' => '0599333333',
+        ])->assertRedirect('/profile')->assertSessionHasNoErrors();
+
+        $user->refresh();
+        $this->assertEquals('0599333333', $user->phone);
+
+        // Change 4 (Exceeds limit of 3 in 24 hours)
+        $response = $this->actingAs($user)->post('/profile', [
+            'name' => 'سامي يوسف',
+            'phone' => '0599444444',
+        ]);
+
+        $response->assertSessionHasErrors(['phone']);
+
+        $user->refresh();
+        $this->assertEquals('0599333333', $user->phone);
+    }
+
+    public function test_updating_name_only_does_not_consume_phone_rate_limit(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'الاسم الأصلي',
+            'phone' => '0599000000',
+            'role' => 'rider',
+        ]);
+
+        for ($i = 1; $i <= 4; $i++) {
+            $this->actingAs($user)->post('/profile', [
+                'name' => "تعديل الاسم رقم {$i}",
+                'phone' => '0599000000', // Unchanged phone
+            ])->assertRedirect('/profile')->assertSessionHasNoErrors();
+        }
+
+        $user->refresh();
+        $this->assertEquals('تعديل الاسم رقم 4', $user->name);
+        $this->assertEquals('0599000000', $user->phone);
+    }
 }
