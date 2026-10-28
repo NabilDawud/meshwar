@@ -7,6 +7,10 @@
 
     <title>{{ config('app.name', 'مشوار - غزة') }}</title>
 
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="apple-touch-icon" href="/favicon.svg">
+
     <!-- Mobile PWA Standalone Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

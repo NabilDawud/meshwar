@@ -11,7 +11,13 @@
   "lang": "ar",
   "icons": [
     {
-      "src": "/images/sample-ajala.svg",
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
