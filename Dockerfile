@@ -32,10 +32,13 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Ensure storage and bootstrap/cache permissions
 RUN chown -R www-data:www-data storage bootstrap/cache && \
-    chmod -R 775 storage bootstrap/cache
+    chmod -R 777 storage bootstrap/cache
 
+ENV SERVER_NAME=":80"
 ENV PORT=80
+EXPOSE 80
 
 # Startup: ensure key, migrate database, seed demo data, optimize caches, then boot server
 CMD ["sh", "-c", "if [ -z \"$APP_KEY\" ]; then php artisan key:generate --force; fi && php artisan migrate --force && php artisan db:seed --force && php artisan optimize && frankenphp run"]
+
 
