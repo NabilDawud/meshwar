@@ -25,6 +25,7 @@ WORKDIR /app
 # Copy application files
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
+COPY Caddyfile /etc/caddy/Caddyfile
 
 # Install production dependencies
 ENV COMPOSER_ALLOW_SUPERUSER=1
@@ -34,11 +35,11 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 RUN chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 777 storage bootstrap/cache
 
-ENV SERVER_NAME=":80"
 ENV PORT=80
 EXPOSE 80
 
 # Startup: ensure key, migrate database, seed demo data, optimize caches, then boot server
-CMD ["sh", "-c", "if [ -z \"$APP_KEY\" ]; then php artisan key:generate --force; fi && php artisan migrate --force && php artisan db:seed --force && php artisan optimize && frankenphp run"]
+CMD ["sh", "-c", "if [ -z \"$APP_KEY\" ]; then php artisan key:generate --force; fi && php artisan migrate --force && php artisan db:seed --force && php artisan optimize && frankenphp run --config /etc/caddy/Caddyfile"]
+
 
 
