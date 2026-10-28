@@ -67,6 +67,7 @@ class ActiveVehicleController extends Controller
         $from = trim((string) $request->query('from', ''));
         $to = trim((string) $request->query('to', ''));
         $time = trim((string) $request->query('time', ''));
+        $sameDirectionOnly = $request->boolean('same_direction_only', false);
 
         // Load active vehicles with active routes ordered by newest id
         $filtered = Vehicle::query()
@@ -77,7 +78,7 @@ class ActiveVehicleController extends Controller
             ->with(['driver.driverRoute.confirmedBookings'])
             ->orderBy('id', 'desc')
             ->get()
-            ->filter(function (Vehicle $vehicle) use ($from, $to, $time) {
+            ->filter(function (Vehicle $vehicle) use ($from, $to, $time, $sameDirectionOnly) {
                 $driver = $vehicle->driver;
                 if (! $driver) {
                     return false;
@@ -93,24 +94,53 @@ class ActiveVehicleController extends Controller
                     return false;
                 }
 
+                $fromMatch = null;
+                $toMatch = null;
+
                 // Filter by 'from' if specified
                 if ($from !== '') {
-                    $hasFrom = collect($stops)->contains(function ($s) use ($from) {
-                        return str_contains($s['name'], $from) || (isset($s['id']) && $s['id'] === $from);
-                    });
-                    if (! $hasFrom) {
+                    $fromMatch = $route->findStopMatch($from);
+                    if (! $fromMatch) {
                         return false;
                     }
                 }
 
                 // Filter by 'to' if specified
                 if ($to !== '') {
-                    $hasTo = collect($stops)->contains(function ($s) use ($to) {
-                        return str_contains($s['name'], $to) || (isset($s['id']) && $s['id'] === $to);
-                    });
-                    if (! $hasTo) {
+                    $toMatch = $route->findStopMatch($to);
+                    if (! $toMatch) {
                         return false;
                     }
+                }
+
+                // Calculate directional matching when both from and to are specified
+                if ($from !== '' && $to !== '' && $fromMatch && $toMatch) {
+                    $fromIdx = $fromMatch['index'];
+                    $toIdx = $toMatch['index'];
+                    $riderDirection = ($fromIdx <= $toIdx) ? 'outbound' : 'return';
+
+                    // One-way routes cannot be searched in reverse return direction
+                    if ($riderDirection === 'return' && ! $route->isTwoWay()) {
+                        return false;
+                    }
+
+                    $driverDirection = $route->active_direction ?? 'outbound';
+                    $isDirectionMatch = ($driverDirection === $riderDirection);
+
+                    // If same_direction_only is requested, exclude return leg
+                    if ($sameDirectionOnly && ! $isDirectionMatch) {
+                        return false;
+                    }
+
+                    $vehicle->direction_match = $isDirectionMatch ? 'active' : 'return_leg';
+                    $vehicle->direction_match_arabic = $isDirectionMatch ? 'متجه لوجهتك الآن' : 'على خط العودة';
+                    $vehicle->segment_fare_ils = $route->calculateSegmentFare($from, $to, 1);
+                    $vehicle->match_priority = $isDirectionMatch ? 0 : 1;
+                } else {
+                    $vehicle->direction_match = 'active';
+                    $vehicle->direction_match_arabic = 'متجه لوجهتك الآن';
+                    $vehicle->segment_fare_ils = $route->calculateSegmentFare($from ?: null, $to ?: null, 1);
+                    $vehicle->match_priority = 0;
                 }
 
                 // Filter by departure time if specified
@@ -122,6 +152,7 @@ class ActiveVehicleController extends Controller
 
                 return true;
             })
+            ->sortBy(fn (Vehicle $v) => $v->match_priority ?? 0)
             ->values();
 
         // Native Laravel pagination when page is requested (only map the current page slice for maximum speed)
@@ -197,6 +228,12 @@ class ActiveVehicleController extends Controller
             'status' => $route->status,
             'status_arabic' => $route->status_arabic,
             'is_trip_active' => (bool) $route->is_trip_active,
+            'is_two_way' => (bool) $route->isTwoWay(),
+            'active_direction' => $route->active_direction ?? 'outbound',
+            'active_direction_arabic' => $route->active_direction_arabic,
+            'direction_match' => $vehicle->direction_match ?? 'active',
+            'direction_match_arabic' => $vehicle->direction_match_arabic ?? 'متجه لوجهتك الآن',
+            'segment_fare_ils' => isset($vehicle->segment_fare_ils) ? (float) $vehicle->segment_fare_ils : (float) $route->calculateSegmentFare(null, null, 1),
             'last_latitude' => round((float) ($route->last_latitude ?? $firstStop['lat']), 5),
             'last_longitude' => round((float) ($route->last_longitude ?? $firstStop['lng']), 5),
             'last_landmark' => $route->last_landmark ?? $firstStop['name'],
