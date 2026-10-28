@@ -72,6 +72,50 @@
             </div>
         </div>
 
+        <!-- Live Trip Direction Switcher (Outbound vs Return) -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-base">🧭</span>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">اتجاه الرحلة المباشر:</span>
+                </div>
+                <span 
+                    class="text-xs font-black px-2.5 py-1 rounded-full"
+                    :class="activeDirection === 'outbound' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'"
+                    x-text="activeDirectionArabic"
+                ></span>
+            </div>
+            
+            @if($route->is_two_way ?? true)
+                <div class="grid grid-cols-2 gap-2">
+                    <button 
+                        type="button"
+                        @click="updateDirection('outbound')"
+                        :class="activeDirection === 'outbound' ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                        class="py-2.5 px-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition active:scale-95"
+                    >
+                        <span class="text-base">➡️</span>
+                        <span>رحلة الذهاب</span>
+                    </button>
+
+                    <button 
+                        type="button"
+                        @click="updateDirection('return')"
+                        :class="activeDirection === 'return' ? 'bg-blue-600 text-white font-bold border-blue-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                        class="py-2.5 px-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition active:scale-95"
+                    >
+                        <span class="text-base">⬅️</span>
+                        <span>رحلة العودة</span>
+                    </button>
+                </div>
+            @else
+                <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 flex items-center gap-2">
+                    <span>ℹ️</span>
+                    <span>خط السير مسجل كـ "اتجاه واحد فقط". للتحويل لخط دائري ذهاب وإياب، عدل إعدادات الخط.</span>
+                </div>
+            @endif
+        </div>
+
         <!-- Live GPS Position Broadcasting Card (Strictly during active trip & online) -->
         <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
             <div class="flex items-center justify-between">
@@ -275,6 +319,8 @@ function driverDashboard(initialData) {
     return {
         status: initialData.status,
         statusArabic: initialData.statusArabic,
+        activeDirection: '{{ $route->active_direction ?? 'outbound' }}',
+        activeDirectionArabic: '{{ $route->active_direction_arabic ?? 'رحلة الذهاب' }}',
         isTripActive: {{ ($route->is_trip_active ?? false) ? 'true' : 'false' }},
         lastLandmark: '{{ $route->last_landmark ?? '' }}',
         lastPositionAge: '{{ $route->position_age_arabic ?? 'غير محدد' }}',
@@ -301,6 +347,28 @@ function driverDashboard(initialData) {
                 }
             } catch (err) {
                 console.error('Failed to update status', err);
+            }
+        },
+
+        async updateDirection(newDirection) {
+            if (this.activeDirection === newDirection) return;
+            this.activeDirection = newDirection;
+            try {
+                const res = await fetch('{{ route('api.driver.route.direction') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ direction: newDirection })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.activeDirectionArabic = data.active_direction_arabic;
+                }
+            } catch (err) {
+                console.error('Failed to update direction', err);
             }
         },
 

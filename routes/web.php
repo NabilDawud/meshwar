@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/driver/route', [DriverRouteController::class, 'show'])->name('api.driver.route.show');
     Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');
     Route::post('/api/driver/route/status', [DriverRouteController::class, 'updateStatus'])->name('api.driver.route.status');
+    Route::post('/api/driver/route/direction', [DriverRouteController::class, 'updateDirection'])->name('api.driver.route.direction');
     Route::post('/api/driver/position', [DriverRouteController::class, 'updatePosition'])->name('api.driver.position');
 
     // Pre-Trip Driver Manifest View & APIs

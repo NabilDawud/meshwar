@@ -181,6 +181,35 @@
             >
         </div>
 
+        <!-- Route Direction Type (Two-way vs One-way) -->
+        <div class="flex flex-col gap-1.5">
+            <label class="font-bold text-xs text-slate-700 dark:text-slate-200">
+                طبيعة مسار الخط
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+                <button 
+                    type="button" 
+                    @click="isTwoWay = true"
+                    :class="isTwoWay ? 'bg-teal-600 text-white font-bold border-teal-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-3 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
+                >
+                    <span class="text-base">⇄</span>
+                    <span class="font-bold">ذهاب وإياب</span>
+                    <span class="text-[10px] opacity-80">يخدم كلا الاتجاهين</span>
+                </button>
+                <button 
+                    type="button" 
+                    @click="isTwoWay = false"
+                    :class="!isTwoWay ? 'bg-teal-600 text-white font-bold border-teal-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-3 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
+                >
+                    <span class="text-base">➔</span>
+                    <span class="font-bold">اتجاه واحد فقط</span>
+                    <span class="text-[10px] opacity-80">اتجاه الانطلاق فقط</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Submit Button -->
         <button 
             type="button" 
@@ -204,6 +233,7 @@ function routeBuilder(init) {
         stops: init.existingStops && init.existingStops.length > 0 ? init.existingStops : [],
         routeName: init.existingRoute?.name || 'رفح <-> غزة (طريق صلاح الدين)',
         firstTripTime: init.existingRoute?.first_trip_time || '06:30',
+        isTwoWay: init.existingRoute ? Boolean(init.existingRoute.is_two_way ?? true) : true,
         isSubmitting: false,
         map: null,
         markers: [],
@@ -339,6 +369,7 @@ function routeBuilder(init) {
                 name: this.routeName,
                 start_point: this.stops[0].name,
                 first_trip_time: this.firstTripTime,
+                is_two_way: this.isTwoWay,
                 stops: this.stops
             };
 

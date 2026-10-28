@@ -46,6 +46,7 @@ class DriverRouteController extends Controller
             'start_point' => ['required', 'string', 'max:150'],
             'first_trip_time' => ['required', 'string', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'status' => ['nullable', 'string', 'in:on_route,temporary_route,off_route,skip_work'],
+            'is_two_way' => ['nullable', 'boolean'],
             'stops' => ['required', 'array', 'min:2'],
             'stops.*.order' => ['required', 'integer'],
             'stops.*.name' => ['required', 'string'],
@@ -67,6 +68,7 @@ class DriverRouteController extends Controller
                 'start_point' => $validated['start_point'],
                 'first_trip_time' => $validated['first_trip_time'],
                 'status' => $validated['status'] ?? 'on_route',
+                'is_two_way' => $request->has('is_two_way') ? $request->boolean('is_two_way') : true,
                 'stops' => $validated['stops'],
             ]
         );
@@ -105,6 +107,39 @@ class DriverRouteController extends Controller
             'message' => 'تم تحديث حالة المسار التشغيلية',
             'status' => $route->status,
             'status_arabic' => $route->status_arabic,
+        ]);
+    }
+
+    /**
+     * Update active trip direction (outbound vs return).
+     */
+    public function updateDirection(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
+        $route = $user->driverRoute;
+        if (! $route) {
+            return response()->json(['error' => 'لا يوجد خط سير مسجل بعد'], 404);
+        }
+
+        $validated = $request->validate([
+            'direction' => ['required', 'string', 'in:outbound,return'],
+        ], [
+            'direction.required' => 'يجب تحديد اتجاه الرحلة.',
+            'direction.in' => 'الاتجاه يجب أن يكون إما رحلة الذهاب أو رحلة العودة.',
+        ]);
+
+        $route->update(['active_direction' => $validated['direction']]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم تحديث اتجاه الرحلة الحالي',
+            'active_direction' => $route->active_direction,
+            'active_direction_arabic' => $route->active_direction_arabic,
         ]);
     }
 
