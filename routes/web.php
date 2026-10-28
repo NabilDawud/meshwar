@@ -9,6 +9,7 @@ use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
 use App\Http\Controllers\LocationShareController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Rides\ActiveVehicleController;
 use App\Http\Controllers\Rides\TripPlannerController;
 use App\Http\Controllers\SpecialOfferController;
@@ -40,10 +41,14 @@ Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('aut
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 Route::get('/auth/google/mock', [GoogleAuthController::class, 'mockLogin'])->name('auth.google.mock');
 
-// First-Time Role Choice
+// First-Time Role Choice & Profile
 Route::middleware('auth')->group(function () {
     Route::get('/auth/role-choice', [RoleChoiceController::class, 'show'])->name('role.choice');
     Route::post('/auth/role-choice', [RoleChoiceController::class, 'store'])->name('role.choice.store');
+
+    // User Profile & Settings
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::get('/driver', function () {
         /** @var User $user */

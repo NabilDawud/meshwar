@@ -12,7 +12,10 @@
                 لوحة قيادة السائق
             </span>
             <h1 class="text-xl font-black">أهلاً بك، كابتن {{ Auth::user()->name }}</h1>
-            <p class="text-xs text-amber-100 mt-0.5">هاتف التواصل: <span dir="ltr" class="font-mono font-semibold">{{ Auth::user()->phone ?? 'غير محدد' }}</span></p>
+            <p class="text-xs text-amber-100 mt-0.5 flex items-center gap-1.5">
+                <span>هاتف التواصل: <span dir="ltr" class="font-mono font-semibold">{{ Auth::user()->phone ?? 'غير محدد' }}</span></span>
+                <a href="{{ route('profile.show') }}" class="text-[11px] font-bold bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded-lg transition" title="تعديل الاسم ورقم الجوال">✏️ تعديل</a>
+            </p>
         </div>
         <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center text-3xl shrink-0">
             🚗

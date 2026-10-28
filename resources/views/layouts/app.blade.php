@@ -80,17 +80,25 @@
                         </template>
                     </button>
 
+                    <!-- Mobile Backdrop Overlay -->
+                    <div 
+                        x-show="open" 
+                        x-cloak 
+                        @click="open = false" 
+                        class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 sm:hidden"
+                    ></div>
+
                     <!-- Dropdown Panel -->
                     <div 
                         x-show="open" 
                         x-cloak 
-                        x-transition:enter="transition ease-out duration-150"
-                        x-transition:enter-start="opacity-0 scale-95"
-                        x-transition:enter-end="opacity-100 scale-100"
-                        x-transition:leave="transition ease-in duration-100"
-                        x-transition:leave-start="opacity-100 scale-100"
-                        x-transition:leave-end="opacity-0 scale-95"
-                        class="absolute left-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden z-50 flex flex-col max-h-[80vh]"
+                        x-transition:enter="transition ease-out duration-150 transform"
+                        x-transition:enter-start="opacity-0 translate-y-2 sm:translate-y-0 sm:scale-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                        x-transition:leave="transition ease-in duration-100 transform"
+                        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                        x-transition:leave-end="opacity-0 translate-y-2 sm:translate-y-0 sm:scale-95"
+                        class="fixed left-3 right-3 top-16 sm:absolute sm:inset-auto sm:left-0 sm:top-full sm:mt-2 sm:w-96 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden z-50 flex flex-col max-h-[78vh]"
                     >
                         <!-- Header -->
                         <div class="p-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/40">
@@ -146,13 +154,19 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">{{ Auth::user()->name }}</span>
-                    @if(Auth::user()->avatar)
-                        <img src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full border border-teal-500">
-                    @endif
+                    <a href="{{ route('profile.show') }}" class="flex items-center gap-1.5 p-1 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition group" title="الملف الشخصي وتعديل البيانات">
+                        @if(Auth::user()->avatar)
+                            <img src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}" class="w-8 h-8 rounded-full border border-teal-500 shrink-0">
+                        @else
+                            <div class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                                {{ mb_substr(Auth::user()->name, 0, 1) }}
+                            </div>
+                        @endif
+                        <span class="text-xs text-slate-700 dark:text-slate-300 font-bold group-hover:text-teal-600 hidden sm:inline truncate max-w-[120px]">{{ Auth::user()->name }}</span>
+                    </a>
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
-                        <button type="submit" class="text-xs text-rose-600 dark:text-rose-400 font-medium px-2 py-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40">خروج</button>
+                        <button type="submit" class="text-xs text-rose-600 dark:text-rose-400 font-medium px-2 py-1 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">خروج</button>
                     </form>
                 </div>
             @else
