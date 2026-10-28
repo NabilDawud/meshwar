@@ -39,11 +39,6 @@
                         دخول كـ سائق
                     </a>
                 </div>
-                @if(app()->environment('local') || env('QA_MODE') === '1')
-                    <a href="{{ route('auth.google.mock') }}" class="min-h-[36px] flex items-center justify-center text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline mt-1">
-                        دخول مستخدم جديد بدون دور محدد (اختبار شاشة التسجيل)
-                    </a>
-                @endif
             </div>
         @endif
 
