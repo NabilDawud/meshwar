@@ -84,6 +84,28 @@ class BookingController extends Controller
                 ], 422);
             }
 
+            $fare = isset($validated['fare_ils']) && is_numeric($validated['fare_ils'])
+                ? (float) $validated['fare_ils']
+                : null;
+
+            if ($fare === null || $fare <= 0) {
+                // Auto-calculate fare from route stops based on dropoff stop and seats count
+                $stops = $route->stops ?? [];
+                $dropoff = $validated['dropoff_stop'] ?? null;
+                $matchedStop = null;
+                if ($dropoff && ! empty($stops)) {
+                    $matchedStop = collect($stops)->first(function ($s) use ($dropoff) {
+                        return isset($s['name']) && (str_contains($s['name'], $dropoff) || str_contains($dropoff, $s['name']));
+                    });
+                }
+                if (! $matchedStop && ! empty($stops)) {
+                    $matchedStop = end($stops);
+                }
+                if ($matchedStop && isset($matchedStop['fare_ils']) && (float) $matchedStop['fare_ils'] > 0) {
+                    $fare = (float) $matchedStop['fare_ils'] * $seatsRequested;
+                }
+            }
+
             /** @var Booking $booking */
             $booking = Booking::create([
                 'rider_id' => $user->id,
@@ -91,7 +113,7 @@ class BookingController extends Controller
                 'seats' => $seatsRequested,
                 'pickup_stop' => $validated['pickup_stop'] ?? $route->start_point,
                 'dropoff_stop' => $validated['dropoff_stop'] ?? null,
-                'fare_ils' => $validated['fare_ils'] ?? null,
+                'fare_ils' => $fare,
                 'status' => 'confirmed',
                 'client_mutation_id' => $mutationId,
             ]);
@@ -304,7 +326,7 @@ class BookingController extends Controller
     /**
      * Mark a booking as completed after reaching destination.
      */
-    public function completeBooking(int $id): JsonResponse
+    public function completeBooking(Request $request, int $id): JsonResponse
     {
         $user = Auth::user();
 
@@ -315,9 +337,32 @@ class BookingController extends Controller
             return response()->json(['error' => 'غير مصرح لك بإنهاء هذا الحجز'], 403);
         }
 
-        $booking->update([
-            'status' => 'completed',
+        $validated = $request->validate([
+            'fare_ils' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $updates = ['status' => 'completed'];
+
+        if (isset($validated['fare_ils']) && is_numeric($validated['fare_ils'])) {
+            $updates['fare_ils'] = (float) $validated['fare_ils'];
+        } elseif (($booking->fare_ils === null || (float) $booking->fare_ils <= 0) && $booking->route) {
+            $stops = $booking->route->stops ?? [];
+            $dropoff = $booking->dropoff_stop;
+            $matchedStop = null;
+            if ($dropoff && ! empty($stops)) {
+                $matchedStop = collect($stops)->first(function ($s) use ($dropoff) {
+                    return isset($s['name']) && (str_contains($s['name'], $dropoff) || str_contains($dropoff, $s['name']));
+                });
+            }
+            if (! $matchedStop && ! empty($stops)) {
+                $matchedStop = end($stops);
+            }
+            if ($matchedStop && isset($matchedStop['fare_ils']) && (float) $matchedStop['fare_ils'] > 0) {
+                $updates['fare_ils'] = (float) $matchedStop['fare_ils'] * max(1, (int) $booking->seats);
+            }
+        }
+
+        $booking->update($updates);
 
         if ($booking->locationShare) {
             $booking->locationShare->update([

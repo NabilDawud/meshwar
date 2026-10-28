@@ -481,11 +481,14 @@ function riderHome() {
 
         async bookSeat(vehicle) {
             const mutationId = 'mut_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const dropoffStop = vehicle.stops && vehicle.stops.length ? vehicle.stops[vehicle.stops.length - 1] : null;
+            const fareIls = dropoffStop && dropoffStop.fare_ils ? dropoffStop.fare_ils : 0;
             const bookingData = {
                 route_id: vehicle.route_id,
                 seats: 1,
                 pickup_stop: vehicle.start_point,
-                dropoff_stop: vehicle.stops && vehicle.stops.length ? vehicle.stops[vehicle.stops.length - 1].name : null,
+                dropoff_stop: dropoffStop ? dropoffStop.name : null,
+                fare_ils: fareIls,
                 client_mutation_id: mutationId,
                 status: 'waiting_to_send'
             };

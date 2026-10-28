@@ -68,7 +68,7 @@
                         <div>
                             <span class="font-bold text-sm text-slate-800 dark:text-slate-100 block" x-text="r.rider_name"></span>
                             <span class="text-[11px] text-slate-400">
-                                <span x-text="r.seats + ' مقعد'"></span> · الركوب من: <span class="font-bold text-slate-700 dark:text-slate-300" x-text="r.pickup_stop"></span>
+                                <span x-text="r.seats + ' مقعد'"></span> · الركوب: <span class="font-bold text-slate-700 dark:text-slate-300" x-text="r.pickup_stop"></span> · الأجرة: <span class="font-bold text-teal-600 dark:text-teal-400 font-mono" x-text="(r.fare_ils || 0) + ' ₪'"></span>
                             </span>
                         </div>
                     </div>
@@ -118,7 +118,7 @@
                             <span>✓</span>
                             <span>الراكب على متن المركبة</span>
                         </div>
-                        <button @click="completeBooking(r.id)" class="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1">
+                        <button @click="completeBooking(r)" class="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1">
                             <span>🏁</span>
                             <span>تأكيد النزول والوصول</span>
                         </button>
@@ -233,21 +233,32 @@ function driverManifestState() {
             }
         },
 
-        async completeBooking(bookingId) {
-            if (!confirm('هل تأكد وصول الراكب إلى وجهته المحددة؟')) return;
+        async completeBooking(riderItem) {
+            const currentFare = riderItem.fare_ils || '';
+            const promptMsg = currentFare ? 
+                `تأكيد وصول الراكب إلى وجهته (${riderItem.dropoff_stop || ''}).\nالأجرة المسجلة: ${currentFare} ₪.\nيمكنك تأكيد المبلغ أو تعديله:` : 
+                `تأكيد وصول الراكب إلى وجهته (${riderItem.dropoff_stop || ''}).\nأدخل المبلغ المحصل من الراكب بالشيكل (₪):`;
+            
+            const inputAmount = prompt(promptMsg, currentFare || '10');
+            if (inputAmount === null) return;
+
+            const fareVal = parseFloat(inputAmount) || (parseFloat(currentFare) || 0);
 
             try {
-                const res = await fetch(`/api/bookings/${bookingId}/complete`, {
+                const res = await fetch(`/api/bookings/${riderItem.id}/complete`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                         'Accept': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({
+                        fare_ils: fareVal
+                    })
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    this.toastMessage = '🏁 تم إنهاء الرحلة وتأكيد الوصول بنجاح!';
+                    this.toastMessage = `🏁 تم تأكيد الوصول وتسجيل الأجرة (${fareVal} ₪) بنجاح!`;
                     this.fetchManifest();
                 }
             } catch (err) {
