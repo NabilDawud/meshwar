@@ -30,11 +30,14 @@
                 <span class="text-xs font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300" x-text="statusArabic"></span>
             </div>
             
+            @php
+                $initialStatus = $route->status ?? 'on_route';
+            @endphp
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button 
                     @click="updateStatus('on_route')"
-                    :class="status === 'on_route' ? 'bg-teal-600 text-white font-bold border-teal-600' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
+                    :class="status === 'on_route' ? 'bg-teal-600 text-white font-bold border-teal-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'on_route' ? 'bg-teal-600 text-white font-bold border-teal-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
                 >
                     <span class="text-base">🟢</span>
                     <span>على الخط</span>
@@ -42,8 +45,8 @@
 
                 <button 
                     @click="updateStatus('temporary_route')"
-                    :class="status === 'temporary_route' ? 'bg-amber-600 text-white font-bold border-amber-600' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
+                    :class="status === 'temporary_route' ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'temporary_route' ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
                 >
                     <span class="text-base">🔄</span>
                     <span>مسار مؤقت</span>
@@ -51,8 +54,8 @@
 
                 <button 
                     @click="updateStatus('off_route')"
-                    :class="status === 'off_route' ? 'bg-rose-600 text-white font-bold border-rose-600' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
+                    :class="status === 'off_route' ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'off_route' ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
                 >
                     <span class="text-base">⏸️</span>
                     <span>خارج الخط</span>
@@ -60,8 +63,8 @@
 
                 <button 
                     @click="updateStatus('skip_work')"
-                    :class="status === 'skip_work' ? 'bg-slate-600 text-white font-bold border-slate-600' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
+                    :class="status === 'skip_work' ? 'bg-slate-600 text-white font-bold border-slate-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'skip_work' ? 'bg-slate-600 text-white font-bold border-slate-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
                 >
                     <span class="text-base">🏖️</span>
                     <span>إجازة اليوم</span>

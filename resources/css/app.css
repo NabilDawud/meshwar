@@ -10,6 +10,11 @@
     --color-primary-hover: #0f766e;
 }
 
+/* Alpine.js cloak directive support */
+[x-cloak] {
+    display: none !important;
+}
+
 html, body {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;

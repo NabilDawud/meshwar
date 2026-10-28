@@ -46,6 +46,11 @@
     <!-- Tailwind & App Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- Alpine.js Cloak Pre-render Shield -->
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 
