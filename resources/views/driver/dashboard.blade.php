@@ -35,36 +35,40 @@
             @endphp
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button 
+                    type="button"
                     @click="updateStatus('on_route')"
                     :class="status === 'on_route' ? 'bg-teal-600 text-white font-bold border-teal-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'on_route' ? 'bg-teal-600 text-white font-bold border-teal-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
                 >
                     <span class="text-base">🟢</span>
                     <span>على الخط</span>
                 </button>
 
                 <button 
+                    type="button"
                     @click="updateStatus('temporary_route')"
                     :class="status === 'temporary_route' ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'temporary_route' ? 'bg-amber-600 text-white font-bold border-amber-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
                 >
                     <span class="text-base">🔄</span>
                     <span>مسار مؤقت</span>
                 </button>
 
                 <button 
+                    type="button"
                     @click="updateStatus('off_route')"
                     :class="status === 'off_route' ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'off_route' ? 'bg-rose-600 text-white font-bold border-rose-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
                 >
                     <span class="text-base">⏸️</span>
                     <span>خارج الخط</span>
                 </button>
 
                 <button 
+                    type="button"
                     @click="updateStatus('skip_work')"
                     :class="status === 'skip_work' ? 'bg-slate-600 text-white font-bold border-slate-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95 {{ $initialStatus === 'skip_work' ? 'bg-slate-600 text-white font-bold border-slate-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700' }}"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex flex-col items-center gap-1 transition active:scale-95"
                 >
                     <span class="text-base">🏖️</span>
                     <span>إجازة اليوم</span>
@@ -72,8 +76,8 @@
             </div>
         </div>
 
-        <!-- Live Trip Direction Switcher (Outbound vs Return) -->
-        <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-2.5">
+        <!-- Live Trip Direction Switcher & Corridor Nature (Outbound vs Return) -->
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1.5">
                     <span class="text-base">🧭</span>
@@ -86,34 +90,47 @@
                 ></span>
             </div>
             
-            @if($route->is_two_way ?? true)
-                <div class="grid grid-cols-2 gap-2">
-                    <button 
-                        type="button"
-                        @click="updateDirection('outbound')"
-                        :class="activeDirection === 'outbound' ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                        class="py-2.5 px-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition active:scale-95"
-                    >
-                        <span class="text-base">➡️</span>
-                        <span>رحلة الذهاب</span>
-                    </button>
+            <div x-show="isTwoWay" class="grid grid-cols-2 gap-2">
+                <button 
+                    type="button"
+                    @click="updateDirection('outbound')"
+                    :class="activeDirection === 'outbound' ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition active:scale-95"
+                >
+                    <span class="text-base">➡️</span>
+                    <span>رحلة الذهاب</span>
+                </button>
 
-                    <button 
-                        type="button"
-                        @click="updateDirection('return')"
-                        :class="activeDirection === 'return' ? 'bg-blue-600 text-white font-bold border-blue-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
-                        class="py-2.5 px-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition active:scale-95"
-                    >
-                        <span class="text-base">⬅️</span>
-                        <span>رحلة العودة</span>
-                    </button>
+                <button 
+                    type="button"
+                    @click="updateDirection('return')"
+                    :class="activeDirection === 'return' ? 'bg-blue-600 text-white font-bold border-blue-600 shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'"
+                    class="py-2.5 px-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition active:scale-95"
+                >
+                    <span class="text-base">⬅️</span>
+                    <span>رحلة العودة</span>
+                </button>
+            </div>
+
+            <div x-show="!isTwoWay" class="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                <span>ℹ️</span>
+                <span>المسار حالياً "اتجاه واحد فقط" (ذهاب). يمكنك تفعيل الذهاب والإياب لخدمة كلا الاتجاهين.</span>
+            </div>
+
+            <!-- Corridor Nature (Round-Trip vs One-Way) 1-Tap Toggle -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-slate-400">طبيعة الخط:</span>
+                    <span class="font-bold text-teal-700 dark:text-teal-300" x-text="isTwoWay ? 'ذهاب وإياب (⇄)' : 'اتجاه واحد فقط (➔)'"></span>
                 </div>
-            @else
-                <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 flex items-center gap-2">
-                    <span>ℹ️</span>
-                    <span>خط السير مسجل كـ "اتجاه واحد فقط". للتحويل لخط دائري ذهاب وإياب، عدل إعدادات الخط.</span>
-                </div>
-            @endif
+                <button 
+                    type="button" 
+                    @click="toggleTwoWay()" 
+                    class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition active:scale-95 flex items-center gap-1"
+                >
+                    <span x-text="isTwoWay ? 'تحويل لاتجاه واحد ➔' : 'تفعيل ذهاب وإياب ⇄'"></span>
+                </button>
+            </div>
         </div>
 
         <!-- Live GPS Position Broadcasting Card (Strictly during active trip & online) -->
@@ -321,6 +338,7 @@ function driverDashboard(initialData) {
         statusArabic: initialData.statusArabic,
         activeDirection: '{{ $route->active_direction ?? 'outbound' }}',
         activeDirectionArabic: '{{ $route->active_direction_arabic ?? 'رحلة الذهاب' }}',
+        isTwoWay: {{ ($route->is_two_way ?? true) ? 'true' : 'false' }},
         isTripActive: {{ ($route->is_trip_active ?? false) ? 'true' : 'false' }},
         lastLandmark: '{{ $route->last_landmark ?? '' }}',
         lastPositionAge: '{{ $route->position_age_arabic ?? 'غير محدد' }}',
@@ -369,6 +387,27 @@ function driverDashboard(initialData) {
                 }
             } catch (err) {
                 console.error('Failed to update direction', err);
+            }
+        },
+
+        async toggleTwoWay() {
+            const nextVal = !this.isTwoWay;
+            try {
+                const res = await fetch('{{ route('api.driver.route.two_way') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ is_two_way: nextVal })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.isTwoWay = data.is_two_way;
+                }
+            } catch (err) {
+                console.error('Failed to update route corridor type', err);
             }
         },
 

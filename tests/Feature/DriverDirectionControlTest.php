@@ -127,4 +127,35 @@ class DriverDirectionControlTest extends TestCase
         $response->assertStatus(200);
         $this->assertFalse($this->route->fresh()->is_two_way);
     }
+
+    public function test_driver_can_toggle_two_way_corridor_type_via_api(): void
+    {
+        $this->assertTrue($this->route->is_two_way);
+
+        // Switch to one-way
+        $response = $this->actingAs($this->driver)->postJson('/api/driver/route/two-way', [
+            'is_two_way' => false,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'ok' => true,
+                'is_two_way' => false,
+            ]);
+
+        $this->assertFalse($this->route->fresh()->is_two_way);
+
+        // Switch back to two-way
+        $response2 = $this->actingAs($this->driver)->postJson('/api/driver/route/two-way', [
+            'is_two_way' => true,
+        ]);
+
+        $response2->assertStatus(200)
+            ->assertJson([
+                'ok' => true,
+                'is_two_way' => true,
+            ]);
+
+        $this->assertTrue($this->route->fresh()->is_two_way);
+    }
 }

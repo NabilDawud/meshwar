@@ -104,14 +104,19 @@
                             <span class="text-lg animate-pulse">⚠️</span>
                             <div>
                                 <span class="font-bold block">المركبة غيرت مسارها حالياً</span>
-                                <span class="text-[11px] text-amber-700 dark:text-amber-300">السائق خارج خط السير المعتاد، اضغط للاتصال</span>
+                                <span class="text-[11px] text-amber-700 dark:text-amber-300" x-text="b.driver && b.driver.phone ? 'السائق خارج خط السير المعتاد، اضغط للاتصال' : 'السائق خارج خط السير المعتاد حالياً'"></span>
                             </div>
                         </div>
                         <template x-if="b.driver && b.driver.phone">
-                            <a :href="'tel:' + b.driver.phone" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl flex items-center gap-1 text-xs whitespace-nowrap shadow-sm">
+                            <a :href="'tel:' + b.driver.phone" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl flex items-center gap-1.5 text-xs whitespace-nowrap shadow-sm">
                                 <span>📞</span>
-                                <span>اتصال</span>
+                                <span>اتصال: <span class="font-mono" x-text="b.driver.phone"></span></span>
                             </a>
+                        </template>
+                        <template x-if="!b.driver || !b.driver.phone">
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 shrink-0">
+                                رقم السائق غير مسجل
+                            </span>
                         </template>
                     </div>
                 </template>
@@ -152,10 +157,16 @@
 
                     <!-- Direct Tap-to-Call Link (Enforced by Backend) -->
                     <template x-if="b.driver && b.driver.phone && b.status === 'confirmed'">
-                        <a :href="'tel:' + b.driver.phone" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95">
+                        <a :href="'tel:' + b.driver.phone" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95">
                             <span>📞</span>
-                            <span>اتصال بالسائق</span>
+                            <span>اتصال:</span>
+                            <span class="font-mono tracking-wider font-bold" x-text="b.driver.phone"></span>
                         </a>
+                    </template>
+                    <template x-if="(!b.driver || !b.driver.phone) && b.status === 'confirmed'">
+                        <span class="text-[11px] text-slate-400 bg-slate-100 dark:bg-slate-700/60 px-3 py-1.5 rounded-xl font-bold">
+                            رقم الهاتف غير متوفر
+                        </span>
                     </template>
                 </div>
 

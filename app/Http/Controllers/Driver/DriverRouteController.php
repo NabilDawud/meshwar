@@ -144,6 +144,35 @@ class DriverRouteController extends Controller
     }
 
     /**
+     * Toggle route corridor type (two-way round-trip vs one-way).
+     */
+    public function updateTwoWay(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
+        $route = $user->driverRoute;
+        if (! $route) {
+            return response()->json(['error' => 'لا يوجد خط سير مسجل بعد'], 404);
+        }
+
+        $validated = $request->validate([
+            'is_two_way' => ['required', 'boolean'],
+        ]);
+
+        $route->update(['is_two_way' => $validated['is_two_way']]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم تحديث طبيعة المسار بنجاح',
+            'is_two_way' => (bool) $route->is_two_way,
+        ]);
+    }
+
+    /**
      * Broadcast live GPS position during active trip.
      * Only updates when driver is online and trip is active.
      */
