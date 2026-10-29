@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Rides;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -69,14 +70,14 @@ class ActiveVehicleController extends Controller
         $time = trim((string) $request->query('time', ''));
         $sameDirectionOnly = $request->boolean('same_direction_only', false);
 
-        // Load active vehicles with active routes ordered by newest id
+        // Load active vehicles with active routes ordered by senior driver/vehicle id
         $filtered = Vehicle::query()
             ->where('status', 'active')
             ->whereHas('driver.driverRoute', function ($q) {
                 $q->whereIn('status', ['on_route', 'temporary_route']);
             })
-            ->with(['driver.driverRoute.confirmedBookings'])
-            ->orderBy('id', 'desc')
+            ->with(['driver.driverRoute.confirmedBookings', 'driver.ratingsReceived'])
+            ->orderBy('id', 'asc')
             ->get()
             ->filter(function (Vehicle $vehicle) use ($from, $to, $time, $sameDirectionOnly) {
                 $driver = $vehicle->driver;
@@ -93,6 +94,8 @@ class ActiveVehicleController extends Controller
                 if (empty($stops)) {
                     return false;
                 }
+
+                $vehicle->rating_score = $this->calculateDriverRatingScore($driver);
 
                 $fromMatch = null;
                 $toMatch = null;
@@ -152,7 +155,31 @@ class ActiveVehicleController extends Controller
 
                 return true;
             })
-            ->sortBy(fn (Vehicle $v) => $v->match_priority ?? 0)
+            ->sort(function (Vehicle $a, Vehicle $b) {
+                // 1. Directional Match Priority (0 = active/same direction, 1 = return leg)
+                $dirA = $a->match_priority ?? 0;
+                $dirB = $b->match_priority ?? 0;
+                if ($dirA !== $dirB) {
+                    return $dirA <=> $dirB;
+                }
+
+                // 2. Rating Quality Score (Higher rating first: DESC)
+                $ratingA = $a->rating_score ?? 0.0;
+                $ratingB = $b->rating_score ?? 0.0;
+                if (abs($ratingA - $ratingB) > 0.05) {
+                    return $ratingB <=> $ratingA;
+                }
+
+                // 3. Seniority / Loyalty (Oldest registered driver first: driver_id ASC)
+                $driverIdA = (int) ($a->driver_id ?? $a->driver?->id ?? 0);
+                $driverIdB = (int) ($b->driver_id ?? $b->driver?->id ?? 0);
+                if ($driverIdA !== $driverIdB) {
+                    return $driverIdA <=> $driverIdB;
+                }
+
+                // 4. Tie-breaker: vehicle id ASC
+                return $a->id <=> $b->id;
+            })
             ->values();
 
         // Native Laravel pagination when page is requested (only map the current page slice for maximum speed)
@@ -210,11 +237,20 @@ class ActiveVehicleController extends Controller
         $bookedSeats = $route->confirmedBookings ? $route->confirmedBookings->sum('seats') : 0;
         $freeSeats = max(0, (int) $vehicle->seat_count - $bookedSeats);
 
+        $ratings = $driver->relationLoaded('ratingsReceived')
+            ? $driver->ratingsReceived
+            : $driver->ratingsReceived();
+        $ratingsCount = $ratings ? $ratings->count() : 0;
+        $avgRating = $ratingsCount > 0 ? round((float) ($ratings->avg('rating') ?? 0.0), 1) : 0.0;
+
         return [
             'vehicle_id' => $vehicle->id,
             'route_id' => $route->id,
             'driver_id' => $driver->id,
             'driver_name' => $driver->name,
+            'rating' => $avgRating,
+            'ratings_count' => $ratingsCount,
+            'is_new_driver' => $ratingsCount === 0,
             'vehicle_type' => $vehicle->type,
             'vehicle_type_arabic' => $vehicle->type_arabic,
             'seat_count' => $vehicle->seat_count,
@@ -242,5 +278,28 @@ class ActiveVehicleController extends Controller
             'position_age_arabic' => $route->position_age_arabic,
             'stops' => $route->stops ?? [],
         ];
+    }
+
+    /**
+     * Calculate driver's quality score for ranking.
+     * Established drivers are scored by average rating.
+     * Newcomers (0 reviews) are assigned a fair 4.6 baseline to give them initial visibility.
+     */
+    private function calculateDriverRatingScore(?User $driver): float
+    {
+        if (! $driver) {
+            return 0.0;
+        }
+
+        $ratings = $driver->relationLoaded('ratingsReceived')
+            ? $driver->ratingsReceived
+            : $driver->ratingsReceived();
+
+        $count = $ratings ? $ratings->count() : 0;
+        if ($count === 0) {
+            return 4.6;
+        }
+
+        return round((float) ($ratings->avg('rating') ?? 0.0), 2);
     }
 }

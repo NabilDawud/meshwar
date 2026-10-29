@@ -148,7 +148,27 @@
                                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300" x-text="vehicle.free_seats + ' مقاعد شاغرة'"></span>
                                 </div>
                                 <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5" x-text="vehicle.route_name"></p>
-                                <span class="text-[11px] text-slate-400 font-mono" x-show="vehicle.license_plate" x-text="vehicle.license_plate"></span>
+                                
+                                <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                    <!-- Driver Name & License -->
+                                    <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300" x-text="vehicle.driver_name"></span>
+                                    <span class="text-[10px] text-slate-400 font-mono" x-show="vehicle.license_plate" x-text="vehicle.license_plate"></span>
+
+                                    <!-- Rating Badge -->
+                                    <template x-if="vehicle.ratings_count > 0">
+                                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                                            <span>⭐</span>
+                                            <span class="font-mono font-black" x-text="vehicle.rating"></span>
+                                            <span class="text-[10px] text-amber-600 dark:text-amber-400" x-text="'(' + vehicle.ratings_count + ')'"></span>
+                                        </span>
+                                    </template>
+                                    <template x-if="vehicle.ratings_count === 0">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                                            <span>✨</span>
+                                            <span>سائق جديد</span>
+                                        </span>
+                                    </template>
+                                </div>
                             </div>
                         </div>
 
@@ -308,7 +328,19 @@
                     <span class="text-xl">🚐</span>
                     <div>
                         <span class="font-bold text-slate-800 dark:text-slate-200 block" x-text="modalVehicle?.vehicle_type_arabic"></span>
-                        <span class="text-slate-400" x-text="modalVehicle?.driver_name"></span>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-slate-400" x-text="modalVehicle?.driver_name"></span>
+                            <template x-if="modalVehicle?.ratings_count > 0">
+                                <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                    ⭐ <span x-text="modalVehicle.rating"></span> (<span x-text="modalVehicle.ratings_count"></span>)
+                                </span>
+                            </template>
+                            <template x-if="modalVehicle?.ratings_count === 0">
+                                <span class="text-[10px] text-slate-400">
+                                    ✨ سائق جديد
+                                </span>
+                            </template>
+                        </div>
                     </div>
                 </div>
                 <span 
