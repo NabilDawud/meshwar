@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Rides;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\User;
 use App\Models\Vehicle;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -70,23 +72,65 @@ class ActiveVehicleController extends Controller
         $time = trim((string) $request->query('time', ''));
         $sameDirectionOnly = $request->boolean('same_direction_only', false);
 
-        // Load active vehicles with active routes ordered by senior driver/vehicle id
-        $filtered = Vehicle::query()
-            ->where('status', 'active')
-            ->whereHas('driver.driverRoute', function ($q) {
+        $dateParam = trim((string) $request->query('date', ''));
+        $targetDate = $dateParam !== '' ? $dateParam : today()->toDateString();
+        try {
+            $parsedDate = Carbon::parse($targetDate);
+        } catch (\Exception $e) {
+            $parsedDate = today();
+            $targetDate = $parsedDate->toDateString();
+        }
+        $dayOfWeek = $parsedDate->dayOfWeek; // 0=Sun, 1=Mon, ..., 6=Sat
+        $isToday = $parsedDate->isToday();
+        $isFutureDate = $parsedDate->isAfter(today());
+
+        // Load active vehicles
+        $vehiclesQuery = Vehicle::query()
+            ->where('status', 'active');
+
+        if ($isToday) {
+            $vehiclesQuery->whereHas('driver.driverRoutes', function ($q) {
                 $q->whereIn('status', ['on_route', 'temporary_route']);
-            })
-            ->with(['driver.driverRoute.confirmedBookings', 'driver.ratingsReceived'])
+            });
+        }
+
+        $filtered = $vehiclesQuery
+            ->with(['driver.driverRoute', 'driver.driverRoutes', 'driver.schedules.route', 'driver.ratingsReceived'])
             ->orderBy('id', 'asc')
             ->get()
-            ->filter(function (Vehicle $vehicle) use ($from, $to, $time, $sameDirectionOnly) {
+            ->filter(function (Vehicle $vehicle) use ($from, $to, $time, $sameDirectionOnly, $dayOfWeek, $targetDate, $isToday, $isFutureDate) {
                 $driver = $vehicle->driver;
                 if (! $driver) {
                     return false;
                 }
 
-                $route = $driver->driverRoute;
-                if (! $route || ! in_array($route->status, ['on_route', 'temporary_route'])) {
+                // Resolve schedule for target day of week
+                $schedule = $driver->schedules ? $driver->schedules->firstWhere('day_of_week', $dayOfWeek) : null;
+
+                if ($schedule) {
+                    if ($schedule->is_day_off) {
+                        return false;
+                    }
+
+                    $route = $schedule->route
+                        ?? ($schedule->route_id ? $driver->driverRoutes->firstWhere('id', $schedule->route_id) : null)
+                        ?? $driver->driverRoute
+                        ?? $driver->driverRoutes->first();
+
+                    $startTime = $schedule->start_time ?? ($route?->first_trip_time ?? '07:00');
+                    $endTime = $schedule->end_time ?? '16:00';
+                } else {
+                    $route = $driver->driverRoute ?? $driver->driverRoutes->first();
+                    $startTime = $route?->first_trip_time ?? '07:00';
+                    $endTime = '16:00';
+                }
+
+                if (! $route) {
+                    return false;
+                }
+
+                // For TODAY: route must be active on the road ('on_route' or 'temporary_route')
+                if ($isToday && ! in_array($route->status, ['on_route', 'temporary_route'])) {
                     return false;
                 }
 
@@ -146,12 +190,48 @@ class ActiveVehicleController extends Controller
                     $vehicle->match_priority = 0;
                 }
 
-                // Filter by departure time if specified
+                // Filter by operating time window if specified
                 if ($time !== '') {
-                    if (strcmp($route->first_trip_time, $time) < 0) {
-                        // Allow rides departing at or after requested time
+                    $normTime = strlen($time) === 4 && substr($time, 1, 1) === ':' ? '0'.$time : $time;
+                    $normStart = strlen($startTime) === 4 && substr($startTime, 1, 1) === ':' ? '0'.$startTime : $startTime;
+                    $normEnd = strlen($endTime) === 4 && substr($endTime, 1, 1) === ':' ? '0'.$endTime : $endTime;
+
+                    if ($normStart <= $normEnd) {
+                        $inWindow = ($normTime >= $normStart && $normTime <= $normEnd);
+                    } else {
+                        // Overnight shift e.g. 22:00 -> 04:00
+                        $inWindow = ($normTime >= $normStart || $normTime <= $normEnd);
+                    }
+
+                    if (! $inWindow) {
+                        return false;
                     }
                 }
+
+                // Date-scoped seat inventory
+                $bookedSeatsQuery = Booking::where('route_id', $route->id)
+                    ->where('status', 'confirmed');
+
+                if ($isToday) {
+                    $bookedSeatsQuery->where(function ($q) use ($targetDate) {
+                        $q->whereDate('travel_date', $targetDate)
+                            ->orWhereNull('travel_date');
+                    });
+                } else {
+                    $bookedSeatsQuery->whereDate('travel_date', $targetDate);
+                }
+
+                $bookedSeats = (int) $bookedSeatsQuery->sum('seats');
+                $freeSeats = max(0, (int) $vehicle->seat_count - $bookedSeats);
+
+                $vehicle->resolved_route = $route;
+                $vehicle->target_date = $targetDate;
+                $vehicle->is_future_date = $isFutureDate;
+                $vehicle->operating_window = [
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                ];
+                $vehicle->free_seats = $freeSeats;
 
                 return true;
             })
@@ -231,11 +311,11 @@ class ActiveVehicleController extends Controller
     private function formatVehicle(Vehicle $vehicle): array
     {
         $driver = $vehicle->driver;
-        $route = $driver->driverRoute;
+        $route = $vehicle->resolved_route ?? $driver->driverRoute ?? $driver->driverRoutes?->first();
         $firstStop = $route->stops[0] ?? ['name' => 'نقطة الانطلاق', 'lat' => 31.3456, 'lng' => 34.3182];
 
-        $bookedSeats = $route->confirmedBookings ? $route->confirmedBookings->sum('seats') : 0;
-        $freeSeats = max(0, (int) $vehicle->seat_count - $bookedSeats);
+        $freeSeats = $vehicle->free_seats ?? (int) $vehicle->seat_count;
+        $isFutureDate = (bool) ($vehicle->is_future_date ?? false);
 
         $ratings = $driver->relationLoaded('ratingsReceived')
             ? $driver->ratingsReceived
@@ -255,6 +335,12 @@ class ActiveVehicleController extends Controller
             'vehicle_type_arabic' => $vehicle->type_arabic,
             'seat_count' => $vehicle->seat_count,
             'free_seats' => $freeSeats,
+            'travel_date' => $vehicle->target_date ?? today()->toDateString(),
+            'is_future_date' => $isFutureDate,
+            'operating_window' => $vehicle->operating_window ?? [
+                'start_time' => $route->first_trip_time ?? '07:00',
+                'end_time' => '16:00',
+            ],
             'photo' => $vehicle->photos[0] ?? '/images/sample-ajala.svg',
             'photos' => $vehicle->photos ?? [],
             'license_plate' => $vehicle->license_plate,
@@ -270,12 +356,12 @@ class ActiveVehicleController extends Controller
             'direction_match' => $vehicle->direction_match ?? 'active',
             'direction_match_arabic' => $vehicle->direction_match_arabic ?? 'متجه لوجهتك الآن',
             'segment_fare_ils' => isset($vehicle->segment_fare_ils) ? (float) $vehicle->segment_fare_ils : (float) $route->calculateSegmentFare(null, null, 1),
-            'last_latitude' => round((float) ($route->last_latitude ?? $firstStop['lat']), 5),
-            'last_longitude' => round((float) ($route->last_longitude ?? $firstStop['lng']), 5),
-            'last_landmark' => $route->last_landmark ?? $firstStop['name'],
-            'last_position_at' => $route->last_position_at?->toISOString(),
-            'position_age_minutes' => $route->position_age_minutes ?? 0,
-            'position_age_arabic' => $route->position_age_arabic,
+            'last_latitude' => $isFutureDate ? null : round((float) ($route->last_latitude ?? $firstStop['lat']), 5),
+            'last_longitude' => $isFutureDate ? null : round((float) ($route->last_longitude ?? $firstStop['lng']), 5),
+            'last_landmark' => $isFutureDate ? ($firstStop['name'] ?? null) : ($route->last_landmark ?? $firstStop['name']),
+            'last_position_at' => $isFutureDate ? null : $route->last_position_at?->toISOString(),
+            'position_age_minutes' => $isFutureDate ? null : ($route->position_age_minutes ?? 0),
+            'position_age_arabic' => $isFutureDate ? 'رحلة مجدولة' : $route->position_age_arabic,
             'stops' => $route->stops ?? [],
         ];
     }
