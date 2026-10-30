@@ -123,6 +123,20 @@
 
                 <!-- Ride Stops & Details -->
                 <div class="grid grid-cols-2 gap-2 text-xs p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                    <div class="col-span-2 flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                        <span class="text-slate-500 dark:text-slate-400 font-bold text-[11px] flex items-center gap-1.5">
+                            <span>📅</span>
+                            <span>موعد الرحلة:</span>
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-teal-700 dark:text-teal-300 font-mono text-xs" x-text="b.travel_date || b.created_at?.slice(0, 10)"></span>
+                            <template x-if="b.travel_date && b.travel_date > todayDate">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                    حجز مسبق
+                                </span>
+                            </template>
+                        </div>
+                    </div>
                     <div>
                         <span class="text-slate-400 block text-[11px]">محطة الركوب:</span>
                         <span class="font-bold text-slate-800 dark:text-slate-200" x-text="b.pickup_stop || 'غير محدد'"></span>
@@ -229,6 +243,7 @@ function riderBookingsState(config) {
 
     return {
         bookings: startingBookings,
+        todayDate: '{{ today()->toDateString() }}',
         loading: startingBookings.length === 0,
         outboxBooking: null,
         syncNotification: null,

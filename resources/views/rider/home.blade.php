@@ -36,6 +36,50 @@
             <span class="text-[11px] font-bold text-teal-600 dark:text-teal-400" x-text="vehicles.length + ' مركبة نشطة'"></span>
         </div>
 
+        <!-- Day Selector Pills for Advance Discovery & Booking -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 text-xs select-none">
+            <span class="text-[10px] font-bold text-slate-400 shrink-0">موعد السفر:</span>
+            
+            <button 
+                type="button" 
+                @click="selectDate(todayDate)"
+                class="px-3 py-1.5 rounded-xl font-bold transition shrink-0"
+                :class="selectedDate === todayDate ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+            >
+                اليوم
+            </button>
+            
+            <button 
+                type="button" 
+                @click="selectDate(tomorrowDate)"
+                class="px-3 py-1.5 rounded-xl font-bold transition shrink-0"
+                :class="selectedDate === tomorrowDate ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+            >
+                غداً
+            </button>
+            
+            <button 
+                type="button" 
+                @click="selectDate(dayAfterDate)"
+                class="px-3 py-1.5 rounded-xl font-bold transition shrink-0"
+                :class="selectedDate === dayAfterDate ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'"
+            >
+                بعد غد
+            </button>
+
+            <!-- Custom Date Input -->
+            <div class="flex items-center gap-1 shrink-0">
+                <input 
+                    type="date" 
+                    :min="todayDate" 
+                    x-model="selectedDate" 
+                    @change="fetchVehicles(1)"
+                    class="h-8 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-[11px] font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500"
+                    title="اختر تاريخاً آخر"
+                >
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <!-- From Landmark -->
             <div class="flex flex-col gap-1">
@@ -174,9 +218,17 @@
 
                         <!-- Schedule & Direction Badges -->
                         <div class="flex flex-col items-end gap-1.5 shrink-0">
-                            <span class="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-bold">
-                                ⏰ <span x-text="vehicle.first_trip_time"></span>
-                            </span>
+                            <template x-if="vehicle.operating_window">
+                                <span class="text-[11px] px-2 py-0.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-mono font-bold flex items-center gap-1">
+                                    <span>⏰</span>
+                                    <span x-text="vehicle.operating_window.start_time + ' - ' + vehicle.operating_window.end_time"></span>
+                                </span>
+                            </template>
+                            <template x-if="!vehicle.operating_window">
+                                <span class="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-bold">
+                                    ⏰ <span x-text="vehicle.first_trip_time"></span>
+                                </span>
+                            </template>
 
                             <template x-if="vehicle.direction_match === 'active'">
                                 <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-1">
@@ -193,18 +245,31 @@
                         </div>
                     </div>
 
-                    <!-- Strictly Last Recorded Position + Age (NO Speculative ETAs) -->
-                    <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                            <span class="text-base">📍</span>
-                            <span>آخر موقع مسجل:</span>
-                            <span class="font-bold text-teal-700 dark:text-teal-300" x-text="vehicle.last_landmark"></span>
+                    <!-- Future Scheduled Journey or Live Recorded Position -->
+                    <template x-if="vehicle.is_future_date">
+                        <div class="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5 text-teal-800 dark:text-teal-300 font-bold">
+                                <span>📅</span>
+                                <span>رحلة مجدولة ليوم: <span class="font-mono" x-text="vehicle.travel_date"></span></span>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200">
+                                حجز مسبق مؤكد
+                            </span>
                         </div>
-                        <div class="flex items-center gap-1 text-[11px] text-slate-500 font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <span>⏱️</span>
-                            <span x-text="vehicle.position_age_arabic"></span>
+                    </template>
+                    <template x-if="!vehicle.is_future_date">
+                        <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                                <span class="text-base">📍</span>
+                                <span>آخر موقع مسجل:</span>
+                                <span class="font-bold text-teal-700 dark:text-teal-300" x-text="vehicle.last_landmark"></span>
+                            </div>
+                            <div class="flex items-center gap-1 text-[11px] text-slate-500 font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <span>⏱️</span>
+                                <span x-text="vehicle.position_age_arabic"></span>
+                            </div>
                         </div>
-                    </div>
+                    </template>
 
                     <!-- Stops overview -->
                     <div class="flex items-center gap-1 text-[11px] text-slate-400 overflow-x-auto pb-1">
@@ -239,8 +304,8 @@
                                     @click.stop="openBookingModal(vehicle)" 
                                     :disabled="vehicle.free_seats <= 0"
                                     class="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95"
+                                    x-text="vehicle.is_future_date ? 'احجز مقعدك مسبقاً ➔' : 'احجز مقعدك الآن ➔'"
                                 >
-                                    احجز مقعدك الآن ➔
                                 </button>
                             @endif
                         @else
@@ -350,6 +415,18 @@
                 ></span>
             </div>
 
+            <!-- Travel Date Confirmation Badge -->
+            <div class="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">📅</span>
+                    <div>
+                        <span class="font-bold text-teal-900 dark:text-teal-100 block">تاريخ وموعد الرحلة:</span>
+                        <span class="text-xs font-mono font-bold text-teal-700 dark:text-teal-300" x-text="getFormattedDateLabel(modalTravelDate) + ' (' + modalTravelDate + ')'"></span>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200" x-text="modalTravelDate === todayDate ? 'رحلة اليوم' : 'حجز مسبق مؤكد'"></span>
+            </div>
+
             <!-- Pickup Stop Selection -->
             <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-slate-700 dark:text-slate-300">نقطة الركوب (الصعود):</label>
@@ -445,6 +522,11 @@ function riderHome() {
         landmarks: [],
         vehicles: [],
         mapPins: [],
+        todayDate: '{{ today()->toDateString() }}',
+        tomorrowDate: '{{ today()->addDay()->toDateString() }}',
+        dayAfterDate: '{{ today()->addDays(2)->toDateString() }}',
+        selectedDate: '{{ today()->toDateString() }}',
+        modalTravelDate: '{{ today()->toDateString() }}',
         searchFrom: '',
         searchTo: '',
         searchTime: '',
@@ -577,11 +659,30 @@ function riderHome() {
             }
         },
 
+        selectDate(d) {
+            this.selectedDate = d;
+            this.fetchVehicles(1);
+            if (this.selectedDate === this.todayDate) {
+                this.fetchMapPins();
+            } else {
+                this.mapPins = [];
+                this.renderVehicleMarkers();
+            }
+        },
+
+        getFormattedDateLabel(dateStr) {
+            if (!dateStr || dateStr === this.todayDate) return 'اليوم';
+            if (dateStr === this.tomorrowDate) return 'غداً';
+            if (dateStr === this.dayAfterDate) return 'بعد غد';
+            return dateStr;
+        },
+
         async fetchVehicles(page = 1) {
             this.loading = true;
             try {
                 const params = new URLSearchParams();
                 params.append('page', page);
+                if (this.selectedDate) params.append('date', this.selectedDate);
                 if (this.searchFrom) params.append('from', this.searchFrom);
                 if (this.searchTo) params.append('to', this.searchTo);
                 if (this.searchTime) params.append('time', this.searchTime);
@@ -676,11 +777,14 @@ function riderHome() {
             this.searchTo = '';
             this.searchTime = '';
             this.sameDirectionOnly = false;
+            this.selectedDate = this.todayDate;
             this.fetchVehicles(1);
+            this.fetchMapPins();
         },
 
         openBookingModal(vehicle) {
             this.modalVehicle = vehicle;
+            this.modalTravelDate = vehicle.travel_date || this.selectedDate || this.todayDate;
             this.modalSeats = 1;
             const stops = vehicle.stops || [];
 
@@ -739,6 +843,7 @@ function riderHome() {
             const mutationId = 'mut_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const bookingData = {
                 route_id: this.modalVehicle.route_id,
+                travel_date: this.modalTravelDate,
                 seats: this.modalSeats,
                 pickup_stop: this.modalPickup,
                 dropoff_stop: this.modalDropoff,
