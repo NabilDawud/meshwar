@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class DriverScheduleController extends Controller
 {
@@ -161,7 +162,10 @@ class DriverScheduleController extends Controller
         $validated = $request->validate([
             'schedules' => ['required', 'array', 'min:1'],
             'schedules.*.day_of_week' => ['required', 'integer', 'between:0,6'],
-            'schedules.*.route_id' => ['nullable', 'exists:driver_routes,id'],
+            'schedules.*.route_id' => [
+                'nullable',
+                Rule::exists('driver_routes', 'id')->where(fn ($query) => $query->where('driver_id', $user->id)),
+            ],
             'schedules.*.start_time' => ['nullable', 'string', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'schedules.*.end_time' => ['nullable', 'string', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'schedules.*.is_day_off' => ['nullable', 'boolean'],

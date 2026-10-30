@@ -151,4 +151,13 @@ class Milestone1Test extends TestCase
         $this->assertAuthenticated();
         $this->assertEquals('rider', auth()->user()->role);
     }
+
+    public function test_mock_oauth_is_forbidden_in_production_without_qa_mode(): void
+    {
+        $this->app['env'] = 'production';
+        config(['app.qa_mode' => '0', 'app.demo_mode' => '0']);
+
+        $response = $this->get('/auth/google/mock?role=rider');
+        $response->assertStatus(404);
+    }
 }

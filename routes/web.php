@@ -54,6 +54,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver', function () {
         /** @var User $user */
         $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
         $user->load(['vehicle', 'driverRoutes', 'schedules.route']);
         $vehicle = $user->vehicle;
         $driverRoutes = $user->driverRoutes;
@@ -73,6 +78,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver/vehicle', function () {
         /** @var User $user */
         $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
         $vehicle = $user->vehicle;
 
         return view('driver.vehicle', compact('vehicle'));
@@ -81,6 +91,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver/route', function (Request $request) {
         /** @var User $user */
         $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
         $allRoutes = $user->driverRoutes()->orderBy('id', 'asc')->get();
 
         $routeId = $request->query('route_id');
@@ -114,6 +129,13 @@ Route::middleware('auth')->group(function () {
 
     // Pre-Trip Driver Manifest View & APIs
     Route::get('/driver/manifest', function () {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
         return view('driver.manifest');
     })->name('driver.manifest');
     Route::get('/api/driver/manifest', [BookingController::class, 'driverManifest'])->name('api.driver.manifest');
@@ -140,6 +162,13 @@ Route::middleware('auth')->group(function () {
     })->name('rides.request_detail');
 
     Route::get('/driver/offers', function () {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
         return view('driver.offers');
     })->name('driver.offers');
 
@@ -164,6 +193,13 @@ Route::middleware('auth')->group(function () {
     })->name('rides.history');
 
     Route::get('/driver/history', function () {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
         return view('driver.history');
     })->name('driver.history');
 

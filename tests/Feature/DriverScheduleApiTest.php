@@ -187,4 +187,35 @@ class DriverScheduleApiTest extends TestCase
         $this->assertTrue($this->route2->fresh()->is_active);
         $this->assertFalse($this->route1->fresh()->is_active);
     }
+
+    public function test_driver_cannot_assign_another_drivers_route_to_their_schedule(): void
+    {
+        $otherDriver = User::factory()->create([
+            'role' => 'driver',
+            'email' => 'other-driver@meshwar.local',
+        ]);
+        $otherRoute = DriverRoute::create([
+            'driver_id' => $otherDriver->id,
+            'name' => 'مسار سائق آخر',
+            'start_point' => 'دوار النجمة',
+            'first_trip_time' => '07:30',
+            'status' => 'on_route',
+            'is_active' => true,
+            'is_two_way' => true,
+            'stops' => [
+                ['order' => 1, 'name' => 'دوار النجمة', 'lat' => 31.2825, 'lng' => 34.2514, 'fare_ils' => 0],
+                ['order' => 2, 'name' => 'مفترق بني سهيلا', 'lat' => 31.3411, 'lng' => 34.3166, 'fare_ils' => 5],
+            ],
+        ]);
+
+        $payload = [
+            'schedules' => [
+                ['day_of_week' => 6, 'route_id' => $otherRoute->id, 'start_time' => '07:00', 'end_time' => '16:00', 'is_day_off' => false],
+            ],
+        ];
+
+        $response = $this->actingAs($this->driver)->postJson('/api/driver/schedules', $payload);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['schedules.0.route_id']);
+    }
 }

@@ -61,13 +61,11 @@ class GoogleAuthController extends Controller
 
     /**
      * Local development & demo mock login to simulate Google OAuth without network requests.
-     * Enabled in local/testing, or when QA_MODE/DEMO_MODE=1, or when Google credentials are not yet configured.
+     * Strictly restricted to local/testing environments, or when QA_MODE / DEMO_MODE is explicitly enabled.
      */
     public function mockLogin(Request $request): RedirectResponse
     {
-        $hasGoogleConfig = ! empty(config('services.google.client_id')) && ! empty(config('services.google.client_secret'));
-
-        if (! app()->environment('local', 'testing') && env('QA_MODE') !== '1' && env('DEMO_MODE') !== '1' && $hasGoogleConfig) {
+        if (! app()->environment('local', 'testing') && config('app.qa_mode', env('QA_MODE')) !== '1' && config('app.demo_mode', env('DEMO_MODE')) !== '1') {
             abort(404);
         }
 

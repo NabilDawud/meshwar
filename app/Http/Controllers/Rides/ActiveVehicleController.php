@@ -94,11 +94,26 @@ class ActiveVehicleController extends Controller
             });
         }
 
+        // Pre-query date-scoped seat inventory in a single bulk query to eliminate N+1 overhead
+        $bookedSeatsByRouteQuery = Booking::where('status', 'confirmed');
+        if ($isToday) {
+            $bookedSeatsByRouteQuery->where(function ($q) use ($targetDate) {
+                $q->whereDate('travel_date', $targetDate)
+                    ->orWhereNull('travel_date');
+            });
+        } else {
+            $bookedSeatsByRouteQuery->whereDate('travel_date', $targetDate);
+        }
+        $bookedSeatsByRoute = $bookedSeatsByRouteQuery
+            ->groupBy('route_id')
+            ->selectRaw('route_id, sum(seats) as total_booked')
+            ->pluck('total_booked', 'route_id');
+
         $filtered = $vehiclesQuery
             ->with(['driver.driverRoute', 'driver.driverRoutes', 'driver.schedules.route', 'driver.ratingsReceived'])
             ->orderBy('id', 'asc')
             ->get()
-            ->filter(function (Vehicle $vehicle) use ($from, $to, $time, $sameDirectionOnly, $dayOfWeek, $targetDate, $isToday, $isFutureDate) {
+            ->filter(function (Vehicle $vehicle) use ($from, $to, $time, $sameDirectionOnly, $dayOfWeek, $targetDate, $isToday, $isFutureDate, $bookedSeatsByRoute) {
                 $driver = $vehicle->driver;
                 if (! $driver) {
                     return false;
@@ -208,20 +223,8 @@ class ActiveVehicleController extends Controller
                     }
                 }
 
-                // Date-scoped seat inventory
-                $bookedSeatsQuery = Booking::where('route_id', $route->id)
-                    ->where('status', 'confirmed');
-
-                if ($isToday) {
-                    $bookedSeatsQuery->where(function ($q) use ($targetDate) {
-                        $q->whereDate('travel_date', $targetDate)
-                            ->orWhereNull('travel_date');
-                    });
-                } else {
-                    $bookedSeatsQuery->whereDate('travel_date', $targetDate);
-                }
-
-                $bookedSeats = (int) $bookedSeatsQuery->sum('seats');
+                // Date-scoped seat inventory resolved in O(1) from bulk pre-aggregation
+                $bookedSeats = (int) ($bookedSeatsByRoute[$route->id] ?? 0);
                 $freeSeats = max(0, (int) $vehicle->seat_count - $bookedSeats);
 
                 $vehicle->resolved_route = $route;
