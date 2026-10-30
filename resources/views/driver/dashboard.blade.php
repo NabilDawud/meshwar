@@ -308,28 +308,64 @@
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🗺️</span>
                 <div>
-                    <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100">مسار الخط اليومي (المحطات والأجور)</h2>
-                    <p class="text-[11px] text-slate-400">محطات معتمدة من خريطة غزة OpenStreetMap</p>
+                    <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100">مسار خط اليوم (المحطات والأجور)</h2>
+                    <p class="text-[11px] text-slate-400">يعرض مسار اليوم المحدد في جدولك الأسبوعي تلقائياً</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="{{ route('driver.route') }}" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
-                    {{ $route ? 'تعديل المسار' : '+ رسم المسار' }}
-                </a>
+            <div class="flex items-center gap-2">
                 @if($route)
-                    <a href="{{ route('driver.route', ['new' => 1]) }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">
-                        + مسار إضافي
+                    <a href="{{ route('driver.route', ['route_id' => $route->id]) }}" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
+                        ✏️ تعديل المسار
+                    </a>
+                @else
+                    <a href="{{ route('driver.route') }}" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
+                        + بناء مسار
                     </a>
                 @endif
+                <a href="{{ route('driver.route', ['new' => 1]) }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">
+                    + مسار إضافي
+                </a>
             </div>
         </div>
+
+        <!-- Multiple Routes Quick Switcher Pills -->
+        @if(isset($driverRoutes) && $driverRoutes->count() > 1)
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                <span class="text-[10px] text-slate-400 shrink-0 font-bold">مساراتك ({{ $driverRoutes->count() }}):</span>
+                @foreach($driverRoutes as $r)
+                    @php
+                        $isCurrentRoute = ($route && $route->id === $r->id);
+                    @endphp
+                    <a 
+                        href="{{ route('driver.route', ['route_id' => $r->id]) }}" 
+                        class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 shrink-0 {{ $isCurrentRoute ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-800 dark:text-teal-200 ring-1 ring-teal-500/20' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300' }}"
+                        title="انقر لتعديل هذا المسار"
+                    >
+                        <span>📍</span>
+                        <span class="truncate max-w-[120px]">{{ $r->name }}</span>
+                        @if($isCurrentRoute)
+                            <span class="text-[9px] bg-teal-200 dark:bg-teal-900 text-teal-900 dark:text-teal-200 px-1 rounded">مسار اليوم</span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+        @endif
 
         @if($route)
             <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-black text-slate-800 dark:text-slate-100">
-                        {{ $route->name }}
-                    </span>
+                    <div>
+                        <span class="text-sm font-black text-slate-800 dark:text-slate-100 block">
+                            {{ $route->name }}
+                        </span>
+                        <span class="text-[10px] text-teal-700 dark:text-teal-300 font-bold">
+                            @if($todaySchedule && !empty($todaySchedule['is_day_off']))
+                                🏖️ اليوم إجازة أسبوعية بالجدول (المسار المعتمد)
+                            @else
+                                🟢 المسار المعتمد لدوام اليوم ({{ $currentDayName }})
+                            @endif
+                        </span>
+                    </div>
                     <span class="text-xs px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 font-mono text-slate-700 dark:text-slate-300">
                         ⏰ أول رحلة: {{ $route->first_trip_time }}
                     </span>
@@ -358,6 +394,10 @@
                         @endforeach
                     </div>
                 </div>
+
+                <a href="{{ route('driver.route', ['route_id' => $route->id]) }}" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center justify-center py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition shadow-xs">
+                    ✏️ تعديل محطات وأسعار هذا المسار
+                </a>
             </div>
         @else
             <div class="p-6 rounded-2xl bg-teal-50 dark:bg-teal-950/30 border border-dashed border-teal-200 dark:border-teal-800 text-center flex flex-col items-center gap-2">

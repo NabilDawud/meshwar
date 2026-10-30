@@ -28,6 +28,38 @@
         </div>
     </div>
 
+    <!-- Route Switcher Tabs (Select which route to view and edit) -->
+    @if(isset($allRoutes) && $allRoutes->isNotEmpty())
+        <div class="flex flex-col gap-2">
+            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">مساراتك المسجلة (اضغط لاختيار المسار وتعديله):</label>
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                @foreach($allRoutes as $r)
+                    @php
+                        $isSelected = ($route && $route->id === $r->id && !request()->has('new'));
+                    @endphp
+                    <a 
+                        href="{{ route('driver.route', ['route_id' => $r->id]) }}"
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 border {{ $isSelected ? 'bg-teal-600 text-white border-teal-600 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500' }}"
+                    >
+                        <span>📍</span>
+                        <span class="truncate max-w-[150px]">{{ $r->name }}</span>
+                        @if($r->is_active)
+                            <span class="text-[9px] px-1.5 py-0.2 rounded-full {{ $isSelected ? 'bg-white/20 text-white' : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300' }}">الرئيسي</span>
+                        @endif
+                    </a>
+                @endforeach
+
+                <a 
+                    href="{{ route('driver.route', ['new' => 1]) }}"
+                    class="px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 border border-dashed {{ request()->has('new') ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100' }}"
+                >
+                    <span>➕</span>
+                    <span>مسار جديد</span>
+                </a>
+            </div>
+        </div>
+    @endif
+
     <!-- Gaza Gazetteer Info Banner -->
     <div class="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-xs text-teal-800 dark:text-teal-200 flex items-start gap-2.5">
         <span class="text-xl">📍</span>
@@ -217,16 +249,31 @@
             </div>
         </div>
 
-        <!-- Submit Button -->
-        <button 
-            type="button" 
-            @click="saveRoute" 
-            :disabled="stops.length < 2 || isSubmitting"
-            class="w-full min-h-[48px] bg-teal-600 hover:bg-teal-700 active:scale-[0.98] text-white font-bold rounded-2xl text-sm transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-40"
-        >
-            <span x-show="!isSubmitting">حفظ مسار الخط والمحطات</span>
-            <span x-show="isSubmitting">جاري الحفظ...</span>
-        </button>
+        <!-- Submit and Delete Actions -->
+        <div class="flex items-center gap-2">
+            <button 
+                type="button" 
+                @click="saveRoute" 
+                :disabled="stops.length < 2 || isSubmitting"
+                class="flex-1 min-h-[48px] bg-teal-600 hover:bg-teal-700 active:scale-[0.98] text-white font-bold rounded-2xl text-sm transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-40"
+            >
+                <span x-show="!isSubmitting">حفظ مسار الخط والمحطات 💾</span>
+                <span x-show="isSubmitting">جاري الحفظ...</span>
+            </button>
+
+            @if(isset($allRoutes) && $allRoutes->count() > 1 && $route)
+                <button 
+                    type="button" 
+                    @click="deleteRoute" 
+                    :disabled="isSubmitting"
+                    class="px-4 min-h-[48px] bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-2xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shrink-0"
+                    title="حذف هذا المسار"
+                >
+                    <span>🗑️</span>
+                    <span>حذف المسار</span>
+                </button>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -416,6 +463,33 @@ function routeBuilder(init) {
                 console.error(err);
                 alert('تم حفظ خط السير محلياً على الهاتف. ستتم المزامنة تلقائياً عند توفر الإنترنت.');
                 window.location.href = '{{ route('driver.dashboard') }}';
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+
+        async deleteRoute() {
+            if (!this.routeId) return;
+            if (!confirm('هل أنت متأكد من رغبتك في حذف هذا المسار؟')) return;
+
+            this.isSubmitting = true;
+            try {
+                const res = await fetch(`/api/driver/routes/${this.routeId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert('تم حذف المسار بنجاح.');
+                    window.location.href = '{{ route('driver.route') }}';
+                } else {
+                    alert(data.error || 'تعذر حذف المسار');
+                }
+            } catch (err) {
+                alert('فشل الاتصال بالخادم لحذف المسار');
             } finally {
                 this.isSubmitting = false;
             }

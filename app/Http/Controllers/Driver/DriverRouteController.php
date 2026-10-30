@@ -277,4 +277,32 @@ class DriverRouteController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Delete a saved route if the driver has more than one route.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
+        $route = DriverRoute::where('driver_id', $user->id)->findOrFail($id);
+
+        if ($user->driverRoutes()->count() <= 1) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'لا يمكنك حذف مسارك الوحيد المتبقي. يجب أن تمتلك مساراً واحداً على الأقل.',
+            ], 422);
+        }
+
+        $route->delete();
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم حذف المسار بنجاح',
+        ]);
+    }
 }

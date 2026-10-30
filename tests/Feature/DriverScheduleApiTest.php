@@ -144,4 +144,37 @@ class DriverScheduleApiTest extends TestCase
         $responsePost = $this->actingAs($this->rider)->postJson('/api/driver/schedules', ['schedules' => []]);
         $responsePost->assertStatus(403);
     }
+
+    public function test_driver_can_delete_route_when_they_have_multiple_routes(): void
+    {
+        $this->assertEquals(2, $this->driver->driverRoutes()->count());
+
+        $deleteRes = $this->actingAs($this->driver)->deleteJson("/api/driver/routes/{$this->route2->id}");
+        $deleteRes->assertStatus(200)
+            ->assertJson(['ok' => true]);
+
+        $this->assertDatabaseMissing('driver_routes', ['id' => $this->route2->id]);
+        $this->assertEquals(1, $this->driver->driverRoutes()->count());
+    }
+
+    public function test_driver_cannot_delete_their_only_remaining_route(): void
+    {
+        // Delete route 2 first
+        $this->route2->delete();
+        $this->assertEquals(1, $this->driver->driverRoutes()->count());
+
+        // Attempting to delete the only remaining route should fail with 422
+        $deleteRes = $this->actingAs($this->driver)->deleteJson("/api/driver/routes/{$this->route1->id}");
+        $deleteRes->assertStatus(422)
+            ->assertJson(['ok' => false, 'error' => 'لا يمكنك حذف مسارك الوحيد المتبقي. يجب أن تمتلك مساراً واحداً على الأقل.']);
+
+        $this->assertDatabaseHas('driver_routes', ['id' => $this->route1->id]);
+    }
+
+    public function test_driver_route_page_can_load_specific_route(): void
+    {
+        $response = $this->actingAs($this->driver)->get("/driver/route?route_id={$this->route2->id}");
+        $response->assertStatus(200);
+        $response->assertSee('خط الرشيد الساحلي');
+    }
 }

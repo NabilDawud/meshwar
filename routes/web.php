@@ -57,9 +57,13 @@ Route::middleware('auth')->group(function () {
         $user->load(['vehicle', 'driverRoutes', 'schedules.route']);
         $vehicle = $user->vehicle;
         $driverRoutes = $user->driverRoutes;
-        $route = $driverRoutes->firstWhere('is_active', true) ?? $driverRoutes->first();
+        $todaySchedule = collect(DriverScheduleController::getDriverWeeklySchedule($user, $user->schedules))->firstWhere('day_of_week', now()->dayOfWeek);
+        $todayRoute = null;
+        if ($todaySchedule && ! empty($todaySchedule['route_id'])) {
+            $todayRoute = $driverRoutes->firstWhere('id', $todaySchedule['route_id']);
+        }
+        $route = $todayRoute ?? ($driverRoutes->firstWhere('is_active', true) ?? $driverRoutes->first());
         $schedules = DriverScheduleController::getDriverWeeklySchedule($user, $user->schedules, $route);
-        $todaySchedule = collect($schedules)->firstWhere('day_of_week', now()->dayOfWeek);
 
         return view('driver.dashboard', compact('vehicle', 'route', 'driverRoutes', 'schedules', 'todaySchedule'));
     })->name('driver.dashboard');
@@ -74,18 +78,28 @@ Route::middleware('auth')->group(function () {
         return view('driver.vehicle', compact('vehicle'));
     })->name('driver.vehicle');
 
-    Route::get('/driver/route', function () {
+    Route::get('/driver/route', function (Request $request) {
         /** @var User $user */
         $user = Auth::user();
-        $route = $user->driverRoute;
+        $allRoutes = $user->driverRoutes()->orderBy('id', 'asc')->get();
 
-        return view('driver.route', compact('route'));
+        $routeId = $request->query('route_id');
+        if ($request->has('new')) {
+            $route = null;
+        } elseif ($routeId) {
+            $route = $allRoutes->firstWhere('id', (int) $routeId) ?? $allRoutes->first();
+        } else {
+            $route = $allRoutes->firstWhere('is_active', true) ?? $allRoutes->first();
+        }
+
+        return view('driver.route', compact('route', 'allRoutes'));
     })->name('driver.route');
 
     // Driver Vehicle & Route APIs
     Route::get('/api/driver/vehicle', [DriverVehicleController::class, 'show'])->name('api.driver.vehicle.show');
     Route::post('/api/driver/vehicle', [DriverVehicleController::class, 'store'])->name('api.driver.vehicle.store');
     Route::get('/api/driver/routes', [DriverRouteController::class, 'index'])->name('api.driver.routes.index');
+    Route::delete('/api/driver/routes/{id}', [DriverRouteController::class, 'destroy'])->name('api.driver.routes.destroy');
     Route::get('/api/driver/route', [DriverRouteController::class, 'show'])->name('api.driver.route.show');
     Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');
     Route::post('/api/driver/route/status', [DriverRouteController::class, 'updateStatus'])->name('api.driver.route.status');
