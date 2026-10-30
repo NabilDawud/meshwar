@@ -11,7 +11,27 @@ use Illuminate\Support\Facades\Auth;
 class DriverRouteController extends Controller
 {
     /**
-     * Get the authenticated driver's route.
+     * List all saved routes belonging to the authenticated driver.
+     */
+    public function index(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
+        $routes = $user->driverRoutes()->orderBy('id', 'asc')->get();
+
+        return response()->json([
+            'ok' => true,
+            'count' => $routes->count(),
+            'routes' => $routes,
+        ]);
+    }
+
+    /**
+     * Get the authenticated driver's primary route.
      */
     public function show(): JsonResponse
     {

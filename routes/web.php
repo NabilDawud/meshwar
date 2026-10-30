@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RoleChoiceController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Driver\DriverRouteController;
+use App\Http\Controllers\Driver\DriverScheduleController;
 use App\Http\Controllers\Driver\DriverVehicleController;
 use App\Http\Controllers\GazetteerController;
 use App\Http\Controllers\LocationShareController;
@@ -78,12 +79,17 @@ Route::middleware('auth')->group(function () {
     // Driver Vehicle & Route APIs
     Route::get('/api/driver/vehicle', [DriverVehicleController::class, 'show'])->name('api.driver.vehicle.show');
     Route::post('/api/driver/vehicle', [DriverVehicleController::class, 'store'])->name('api.driver.vehicle.store');
+    Route::get('/api/driver/routes', [DriverRouteController::class, 'index'])->name('api.driver.routes.index');
     Route::get('/api/driver/route', [DriverRouteController::class, 'show'])->name('api.driver.route.show');
     Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');
     Route::post('/api/driver/route/status', [DriverRouteController::class, 'updateStatus'])->name('api.driver.route.status');
     Route::post('/api/driver/route/direction', [DriverRouteController::class, 'updateDirection'])->name('api.driver.route.direction');
     Route::post('/api/driver/route/two-way', [DriverRouteController::class, 'updateTwoWay'])->name('api.driver.route.two_way');
     Route::post('/api/driver/position', [DriverRouteController::class, 'updatePosition'])->name('api.driver.position');
+
+    // Driver Weekly Schedules APIs
+    Route::get('/api/driver/schedules', [DriverScheduleController::class, 'index'])->name('api.driver.schedules.index');
+    Route::post('/api/driver/schedules', [DriverScheduleController::class, 'store'])->name('api.driver.schedules.store');
 
     // Pre-Trip Driver Manifest View & APIs
     Route::get('/driver/manifest', function () {
