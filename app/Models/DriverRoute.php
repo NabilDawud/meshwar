@@ -22,6 +22,7 @@ class DriverRoute extends Model
         'start_point',
         'first_trip_time',
         'status',
+        'is_active',
         'is_two_way',
         'active_direction',
         'is_trip_active',
@@ -38,6 +39,7 @@ class DriverRoute extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'is_active' => true,
         'is_two_way' => true,
         'active_direction' => 'outbound',
     ];
@@ -51,6 +53,7 @@ class DriverRoute extends Model
     {
         return [
             'stops' => 'array',
+            'is_active' => 'boolean',
             'is_two_way' => 'boolean',
             'is_trip_active' => 'boolean',
             'last_latitude' => 'float',
@@ -81,6 +84,14 @@ class DriverRoute extends Model
     public function confirmedBookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'route_id')->where('status', 'confirmed');
+    }
+
+    /**
+     * Get weekly schedule assignments using this route.
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(DriverSchedule::class, 'route_id');
     }
 
     /**

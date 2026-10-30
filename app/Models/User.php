@@ -28,11 +28,27 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the single main route registered by this driver.
+     * Get the single active or primary route registered by this driver.
      */
     public function driverRoute(): HasOne
     {
-        return $this->hasOne(DriverRoute::class, 'driver_id');
+        return $this->hasOne(DriverRoute::class, 'driver_id')->where('is_active', true);
+    }
+
+    /**
+     * Get all saved routes registered by this driver.
+     */
+    public function driverRoutes(): HasMany
+    {
+        return $this->hasMany(DriverRoute::class, 'driver_id');
+    }
+
+    /**
+     * Get weekly schedules registered by this driver.
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(DriverSchedule::class, 'driver_id');
     }
 
     /**

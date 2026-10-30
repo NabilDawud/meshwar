@@ -18,6 +18,7 @@ class Booking extends Model
         'rider_id',
         'route_id',
         'seats',
+        'travel_date',
         'pickup_stop',
         'dropoff_stop',
         'fare_ils',
@@ -31,6 +32,7 @@ class Booking extends Model
      */
     protected $casts = [
         'seats' => 'integer',
+        'travel_date' => 'date',
         'fare_ils' => 'decimal:2',
     ];
 
