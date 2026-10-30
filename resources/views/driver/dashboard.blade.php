@@ -4,7 +4,7 @@
 <div class="p-4 flex flex-col gap-4" x-data="driverDashboard({
     status: '{{ $route->status ?? 'on_route' }}',
     statusArabic: '{{ $route->status_arabic ?? 'عامل على الخط المعتاد' }}'
-})">
+})" x-init="init()">
     <!-- Header Banner -->
     <div class="bg-gradient-to-l from-amber-600 to-amber-700 text-white p-5 rounded-3xl shadow-sm flex items-center justify-between">
         <div>
@@ -276,9 +276,16 @@
                     <p class="text-[11px] text-slate-400">محطات معتمدة من خريطة غزة OpenStreetMap</p>
                 </div>
             </div>
-            <a href="{{ route('driver.route') }}" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
-                {{ $route ? 'تعديل المسار' : '+ رسم المسار' }}
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('driver.route') }}" class="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">
+                    {{ $route ? 'تعديل المسار' : '+ رسم المسار' }}
+                </a>
+                @if($route)
+                    <a href="{{ route('driver.route', ['new' => 1]) }}" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">
+                        + مسار إضافي
+                    </a>
+                @endif
+            </div>
         </div>
 
         @if($route)
@@ -327,6 +334,124 @@
             </div>
         @endif
     </div>
+
+    <!-- Weekly Schedule & Multi-Route Planner Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200 dark:border-slate-700 flex flex-col gap-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
+            <div class="flex items-center gap-2.5">
+                <span class="text-2xl">📅</span>
+                <div>
+                    <h2 class="font-black text-sm sm:text-base text-slate-800 dark:text-slate-100">جدول مواعيد ومسارات الأسبوع</h2>
+                    <p class="text-[11px] text-slate-400">حدد خط السير وساعات العمل أو الإجازة لكل يوم لتمكين الركاب من الحجز المسبق</p>
+                </div>
+            </div>
+            <button 
+                type="button" 
+                @click="copySaturdayToAllWorkdays" 
+                class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto active:scale-95 shadow-sm"
+                title="نسخ ساعات ومسار يوم السبت إلى الأحد، الإثنين، الثلاثاء، والأربعاء، والخميس"
+            >
+                <span>⚡</span>
+                <span>تطبيق مواعيد السبت على باقي الأيام</span>
+            </button>
+        </div>
+
+        <!-- Schedule Toast Notice -->
+        <div x-show="scheduleToast" x-cloak class="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200 text-xs font-bold flex items-center justify-between">
+            <span x-text="scheduleToast"></span>
+            <button type="button" @click="scheduleToast = null" class="text-xs px-2">✕</button>
+        </div>
+
+        <!-- Loading Skeletons -->
+        <div x-show="loadingSchedules" class="flex flex-col gap-2.5 py-4">
+            <template x-for="i in 4" :key="i">
+                <div class="h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/50 animate-pulse"></div>
+            </template>
+        </div>
+
+        <!-- 7-Day Matrix -->
+        <div x-show="!loadingSchedules" class="flex flex-col gap-2.5">
+            <template x-for="s in schedules" :key="s.day_of_week">
+                <div 
+                    class="p-3 sm:p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    :class="s.is_day_off ? 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-80' : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 shadow-sm'"
+                >
+                    <!-- Day Name & Day-Off Toggle -->
+                    <div class="flex items-center justify-between sm:justify-start gap-3 sm:w-48 shrink-0">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs" :class="s.is_day_off ? 'bg-slate-200 dark:bg-slate-700 text-slate-500' : 'bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300'" x-text="s.day_name_arabic.slice(0, 2)"></span>
+                            <span class="font-black text-sm text-slate-800 dark:text-slate-100" x-text="s.day_name_arabic"></span>
+                        </div>
+
+                        <!-- Toggle Day-Off -->
+                        <label class="flex items-center gap-1.5 cursor-pointer text-xs select-none">
+                            <input 
+                                type="checkbox" 
+                                x-model="s.is_day_off" 
+                                class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-600"
+                            >
+                            <span :class="s.is_day_off ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400'">إجازة</span>
+                        </label>
+                    </div>
+
+                    <!-- Work Shift Controls (Route & Hours) -->
+                    <template x-if="!s.is_day_off">
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+                            <!-- Route Select -->
+                            <div class="flex-1">
+                                <select 
+                                    x-model="s.route_id" 
+                                    class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
+                                >
+                                    <template x-for="r in driverRoutes" :key="r.id">
+                                        <option :value="r.id" x-text="r.name" :selected="s.route_id == r.id"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <!-- Shift Hours -->
+                            <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                                <span class="text-[11px] font-bold">من:</span>
+                                <input 
+                                    type="time" 
+                                    x-model="s.start_time" 
+                                    class="h-10 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
+                                >
+                                <span class="text-[11px] font-bold">إلى:</span>
+                                <input 
+                                    type="time" 
+                                    x-model="s.end_time" 
+                                    class="h-10 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
+                                >
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Day-Off Badge -->
+                    <template x-if="s.is_day_off">
+                        <div class="flex-1 flex items-center justify-end text-xs text-slate-400 italic gap-1.5 py-1">
+                            <span>🏖️</span>
+                            <span>إجازة أسبوعية (لا تظهر المركبة في بحث الركاب لهذا اليوم)</span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Save Schedule Button -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
+            <span class="text-[11px] text-slate-400">تحديث المواعيد ينعكس فوراً على خريطة وتطبيق الركاب</span>
+            <button 
+                type="button" 
+                @click="saveSchedules" 
+                :disabled="savingSchedules || loadingSchedules" 
+                class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1.5"
+            >
+                <span x-show="!savingSchedules">حفظ جدول الأسبوع 💾</span>
+                <span x-show="savingSchedules">جاري الحفظ...</span>
+            </button>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -346,6 +471,92 @@ function driverDashboard(initialData) {
         gpsWarning: null,
         lastSentPoint: @if($route->last_latitude && $route->last_longitude) { lat: {{ $route->last_latitude }}, lng: {{ $route->last_longitude }} } @else null @endif,
         tripTimer: null,
+        schedules: [],
+        driverRoutes: [],
+        loadingSchedules: false,
+        savingSchedules: false,
+        scheduleToast: null,
+
+        init() {
+            this.fetchSchedules();
+        },
+
+        async fetchSchedules() {
+            this.loadingSchedules = true;
+            try {
+                const [routesRes, schedRes] = await Promise.all([
+                    fetch('{{ route('api.driver.routes.index') }}'),
+                    fetch('{{ route('api.driver.schedules.index') }}')
+                ]);
+                const routesData = await routesRes.json();
+                const schedData = await schedRes.json();
+
+                if (routesData.ok) {
+                    this.driverRoutes = routesData.routes;
+                }
+                if (schedData.ok) {
+                    this.schedules = schedData.schedules;
+                }
+            } catch (err) {
+                console.error('Failed to load schedules', err);
+            } finally {
+                this.loadingSchedules = false;
+            }
+        },
+
+        copySaturdayToAllWorkdays() {
+            const sat = this.schedules.find(s => s.day_of_week === 6);
+            if (!sat) return;
+
+            this.schedules.forEach(s => {
+                // Apply to Sunday through Thursday (0, 1, 2, 3, 4)
+                if ([0, 1, 2, 3, 4].includes(s.day_of_week)) {
+                    s.route_id = sat.route_id;
+                    s.start_time = sat.start_time;
+                    s.end_time = sat.end_time;
+                    s.is_day_off = sat.is_day_off;
+                }
+            });
+            this.scheduleToast = '⚡ تم نسخ مواعيد السبت إلى باقي أيام العمل بنجاح! يرجى الضغط على حفظ الجدول أدناه.';
+            setTimeout(() => { this.scheduleToast = null; }, 5000);
+        },
+
+        async saveSchedules() {
+            this.savingSchedules = true;
+            try {
+                const payload = {
+                    schedules: this.schedules.map(s => ({
+                        day_of_week: s.day_of_week,
+                        route_id: s.is_day_off ? null : (s.route_id || null),
+                        start_time: s.start_time || '07:00',
+                        end_time: s.end_time || '16:00',
+                        is_day_off: Boolean(s.is_day_off)
+                    }))
+                };
+
+                const res = await fetch('{{ route('api.driver.schedules.store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    this.scheduleToast = '✅ تم حفظ جدول مواعيد ومسارات الأسبوع بنجاح!';
+                    setTimeout(() => { this.scheduleToast = null; }, 4000);
+                } else {
+                    alert(data.error || 'حدث خطأ أثناء حفظ الجدول');
+                }
+            } catch (err) {
+                console.error('Failed to save schedules', err);
+                alert('فشل الاتصال بالخادم لحفظ الجدول');
+            } finally {
+                this.savingSchedules = false;
+            }
+        },
 
         async updateStatus(newStatus) {
             this.status = newStatus;

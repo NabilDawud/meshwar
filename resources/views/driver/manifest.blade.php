@@ -15,13 +15,36 @@
         </a>
     </div>
 
+    <!-- Manifest Date Segment Tabs (Today vs Tomorrow) -->
+    <div class="grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold select-none">
+        <button 
+            type="button" 
+            @click="selectTab('today')"
+            class="py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2"
+            :class="activeTab === 'today' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'"
+        >
+            <span>🚐 ركاب اليوم</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono" :class="activeTab === 'today' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'" x-text="todayCount"></span>
+        </button>
+
+        <button 
+            type="button" 
+            @click="selectTab('tomorrow')"
+            class="py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2"
+            :class="activeTab === 'tomorrow' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'"
+        >
+            <span>📅 حجوزات الغد المسبقة</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono" :class="activeTab === 'tomorrow' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'" x-text="tomorrowCount"></span>
+        </button>
+    </div>
+
     <!-- Route & Capacity Overview Card -->
     <div class="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col gap-2 shadow-sm">
         <div class="flex items-center justify-between">
             <span class="text-sm font-black text-slate-800 dark:text-slate-100" x-text="routeName || 'خط السير'"></span>
             <span class="text-xs px-2.5 py-1 rounded-full font-bold"
                 :class="isTripActive ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'"
-                x-text="isTripActive ? 'الرحلة جارية حالياً' : 'قبل الانطلاق'">
+                x-text="isTripActive ? 'الرحلة جارية حالياً' : (activeTab === 'tomorrow' ? 'رحلة مجدولة للغد' : 'قبل الانطلاق')">
             </span>
         </div>
         <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs">
@@ -51,8 +74,8 @@
     <!-- Empty State -->
     <div x-show="!loading && riders.length === 0" class="p-8 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center gap-2">
         <span class="text-3xl">👥</span>
-        <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200">لا يوجد ركاب مسجلين على الرحلة بعد</h3>
-        <p class="text-xs text-slate-400">ستظهر حجوزات الركاب هنا فور حجزهم للمقاعد على خط السير</p>
+        <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="activeTab === 'tomorrow' ? 'لا توجد حجوزات مسبقة ليوم غد حتى الآن' : 'لا يوجد ركاب مسجلين على رحلة اليوم بعد'"></h3>
+        <p class="text-xs text-slate-400" x-text="activeTab === 'tomorrow' ? 'ستظهر حجوزات ركاب الغد هنا فور قيامهم بالحجز المسبق' : 'ستظهر حجوزات الركاب هنا فور حجزهم للمقاعد على خط السير'"></p>
     </div>
 
     <!-- Riders Manifest List -->
@@ -182,6 +205,12 @@ function driverManifestState() {
         loading: false,
         toastMessage: null,
         pollInterval: null,
+        todayDate: '{{ today()->toDateString() }}',
+        tomorrowDate: '{{ today()->addDay()->toDateString() }}',
+        activeTab: '{{ request()->query('date') === today()->addDay()->toDateString() ? 'tomorrow' : 'today' }}',
+        selectedDate: '{{ request()->query('date', today()->toDateString()) }}',
+        todayCount: 0,
+        tomorrowCount: 0,
 
         init() {
             this.fetchManifest();
@@ -194,10 +223,16 @@ function driverManifestState() {
             }, 5000);
         },
 
+        selectTab(tab) {
+            this.activeTab = tab;
+            this.selectedDate = (tab === 'tomorrow') ? this.tomorrowDate : this.todayDate;
+            this.fetchManifest(true);
+        },
+
         async fetchManifest(showLoader = true) {
             if (showLoader) this.loading = true;
             try {
-                const res = await fetch('{{ route('api.driver.manifest') }}');
+                const res = await fetch(`{{ route('api.driver.manifest') }}?date=${this.selectedDate}`);
                 const data = await res.json();
                 if (data.ok) {
                     this.routeName = data.route_name;
@@ -205,6 +240,8 @@ function driverManifestState() {
                     this.bookedSeats = data.booked_seats;
                     this.freeSeats = data.free_seats;
                     this.riders = data.manifest;
+                    this.todayCount = data.today_count ?? 0;
+                    this.tomorrowCount = data.tomorrow_count ?? 0;
                 }
             } catch (err) {
                 console.error('Failed to load driver manifest', err);

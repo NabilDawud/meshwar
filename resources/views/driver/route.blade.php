@@ -18,7 +18,14 @@
             <span>→</span>
             <span>العودة للوحة القيادة</span>
         </a>
-        <h1 class="text-base font-black text-slate-800 dark:text-slate-100">رسم مسار الخط والمحطات</h1>
+        <div class="flex items-center gap-2">
+            @if($route)
+                <a href="{{ route('driver.route', ['new' => 1]) }}" class="px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-bold transition hover:bg-amber-100">
+                    + مسار جديد
+                </a>
+            @endif
+            <h1 class="text-base font-black text-slate-800 dark:text-slate-100" x-text="isNewRoute ? 'رسم مسار خط جديد' : 'تعديل مسار الخط والمحطات'"></h1>
+        </div>
     </div>
 
     <!-- Gaza Gazetteer Info Banner -->
@@ -227,13 +234,19 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
 function routeBuilder(init) {
+    const isNew = new URLSearchParams(window.location.search).get('new') === '1';
+    const existing = isNew ? null : init.existingRoute;
+    const initialStops = isNew ? [] : (init.existingStops && init.existingStops.length > 0 ? init.existingStops : []);
+
     return {
+        isNewRoute: isNew,
+        routeId: existing?.id || null,
         landmarks: [],
         selectedLandmarkId: '',
-        stops: init.existingStops && init.existingStops.length > 0 ? init.existingStops : [],
-        routeName: init.existingRoute?.name || 'رفح <-> غزة (طريق صلاح الدين)',
-        firstTripTime: init.existingRoute?.first_trip_time || '06:30',
-        isTwoWay: init.existingRoute ? Boolean(init.existingRoute.is_two_way ?? true) : true,
+        stops: initialStops,
+        routeName: existing?.name || (isNew ? 'مسار جديد (مثال: خط الرشيد الساحلي)' : 'رفح <-> غزة (طريق صلاح الدين)'),
+        firstTripTime: existing?.first_trip_time || '07:00',
+        isTwoWay: existing ? Boolean(existing.is_two_way ?? true) : true,
         isSubmitting: false,
         map: null,
         markers: [],
@@ -366,6 +379,8 @@ function routeBuilder(init) {
 
             this.isSubmitting = true;
             const payload = {
+                id: this.isNewRoute ? null : this.routeId,
+                new_route: this.isNewRoute,
                 name: this.routeName,
                 start_point: this.stops[0].name,
                 first_trip_time: this.firstTripTime,

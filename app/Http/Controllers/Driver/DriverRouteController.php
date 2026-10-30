@@ -81,17 +81,54 @@ class DriverRouteController extends Controller
             'stops.min' => 'يجب اختيار محطتين على الأقل (نقطة بداية ونقطة نهاية).',
         ]);
 
-        $route = DriverRoute::updateOrCreate(
-            ['driver_id' => $user->id],
-            [
+        $routeId = $request->input('id');
+        $isNewRoute = $request->boolean('new_route', false);
+
+        if ($routeId) {
+            $route = DriverRoute::where('driver_id', $user->id)->findOrFail($routeId);
+            $route->update([
                 'name' => $validated['name'],
                 'start_point' => $validated['start_point'],
                 'first_trip_time' => $validated['first_trip_time'],
                 'status' => $validated['status'] ?? 'on_route',
                 'is_two_way' => $request->has('is_two_way') ? $request->boolean('is_two_way') : true,
                 'stops' => $validated['stops'],
-            ]
-        );
+            ]);
+        } elseif ($isNewRoute) {
+            $route = DriverRoute::create([
+                'driver_id' => $user->id,
+                'name' => $validated['name'],
+                'start_point' => $validated['start_point'],
+                'first_trip_time' => $validated['first_trip_time'],
+                'status' => $validated['status'] ?? 'on_route',
+                'is_active' => true,
+                'is_two_way' => $request->has('is_two_way') ? $request->boolean('is_two_way') : true,
+                'stops' => $validated['stops'],
+            ]);
+        } else {
+            $route = $user->driverRoute ?? $user->driverRoutes()->first();
+            if ($route) {
+                $route->update([
+                    'name' => $validated['name'],
+                    'start_point' => $validated['start_point'],
+                    'first_trip_time' => $validated['first_trip_time'],
+                    'status' => $validated['status'] ?? 'on_route',
+                    'is_two_way' => $request->has('is_two_way') ? $request->boolean('is_two_way') : true,
+                    'stops' => $validated['stops'],
+                ]);
+            } else {
+                $route = DriverRoute::create([
+                    'driver_id' => $user->id,
+                    'name' => $validated['name'],
+                    'start_point' => $validated['start_point'],
+                    'first_trip_time' => $validated['first_trip_time'],
+                    'status' => $validated['status'] ?? 'on_route',
+                    'is_active' => true,
+                    'is_two_way' => $request->has('is_two_way') ? $request->boolean('is_two_way') : true,
+                    'stops' => $validated['stops'],
+                ]);
+            }
+        }
 
         return response()->json([
             'ok' => true,
