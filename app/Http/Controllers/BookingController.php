@@ -7,6 +7,7 @@ use App\Models\DriverRoute;
 use App\Models\User;
 use App\Notifications\MishwarNotification;
 use App\Services\RouteDriftService;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ class BookingController extends Controller
 
         $validated = $request->validate([
             'route_id' => ['required', 'exists:driver_routes,id'],
+            'travel_date' => ['nullable', 'date', 'after_or_equal:today'],
             'seats' => ['nullable', 'integer', 'min:1', 'max:10'],
             'pickup_stop' => ['nullable', 'string', 'max:150'],
             'dropoff_stop' => ['nullable', 'string', 'max:150'],
@@ -46,6 +48,10 @@ class BookingController extends Controller
 
         $seatsRequested = (int) ($validated['seats'] ?? 1);
         $mutationId = $validated['client_mutation_id'] ?? null;
+        $travelDate = ! empty($validated['travel_date'])
+            ? Carbon::parse($validated['travel_date'])->toDateString()
+            : today()->toDateString();
+        $isToday = ($travelDate === today()->toDateString());
 
         // Offline idempotency: If this mutation was already processed, return existing booking
         if ($mutationId) {
@@ -64,18 +70,28 @@ class BookingController extends Controller
             }
         }
 
-        return DB::transaction(function () use ($user, $validated, $seatsRequested, $mutationId) {
+        return DB::transaction(function () use ($user, $validated, $seatsRequested, $mutationId, $travelDate, $isToday) {
             /** @var DriverRoute $route */
             $route = DriverRoute::with('driver.vehicle')->lockForUpdate()->findOrFail($validated['route_id']);
             $vehicle = $route->driver?->vehicle;
 
             $totalCapacity = $vehicle ? (int) $vehicle->seat_count : 0;
 
-            // Atomic sum of already confirmed seats
-            $bookedSeats = (int) Booking::where('route_id', $route->id)
+            // Atomic sum of already confirmed seats for this travel_date
+            $bookedSeatsQuery = Booking::where('route_id', $route->id)
                 ->where('status', 'confirmed')
-                ->lockForUpdate()
-                ->sum('seats');
+                ->lockForUpdate();
+
+            if ($isToday) {
+                $bookedSeatsQuery->where(function ($q) use ($travelDate) {
+                    $q->whereDate('travel_date', $travelDate)
+                        ->orWhereNull('travel_date');
+                });
+            } else {
+                $bookedSeatsQuery->whereDate('travel_date', $travelDate);
+            }
+
+            $bookedSeats = (int) $bookedSeatsQuery->sum('seats');
 
             $freeSeats = max(0, $totalCapacity - $bookedSeats);
 
@@ -102,6 +118,7 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'rider_id' => $user->id,
                 'route_id' => $route->id,
+                'travel_date' => $travelDate,
                 'seats' => $seatsRequested,
                 'pickup_stop' => $validated['pickup_stop'] ?? $route->start_point,
                 'dropoff_stop' => $validated['dropoff_stop'] ?? null,
@@ -115,13 +132,15 @@ class BookingController extends Controller
             // Notify driver of the new booking
             $driver = $route->driver;
             if ($driver) {
+                $dateLabel = $isToday ? 'اليوم' : "تاريخ {$travelDate}";
+                $notifTitle = $isToday ? 'حجز مقعد جديد 🚐' : 'حجز مسبق جديد 📅';
                 $driver->notify(new MishwarNotification(
-                    title: 'حجز مقعد جديد 🚐',
-                    message: "قام {$user->name} بحجز {$seatsRequested} مقاعد على رحلتك ({$booking->pickup_stop} إلى {$booking->dropoff_stop}).",
+                    title: $notifTitle,
+                    message: "قام {$user->name} بحجز {$seatsRequested} مقاعد لـ ({$dateLabel}) على رحلتك ({$booking->pickup_stop} إلى {$booking->dropoff_stop}).",
                     type: 'booking',
-                    icon: '🚐',
-                    actionUrl: route('driver.manifest'),
-                    extra: ['booking_id' => $booking->id]
+                    icon: $isToday ? '🚐' : '📅',
+                    actionUrl: route('driver.manifest', ['date' => $travelDate]),
+                    extra: ['booking_id' => $booking->id, 'travel_date' => $travelDate]
                 ));
             }
 
@@ -178,7 +197,7 @@ class BookingController extends Controller
     /**
      * Driver views manifest of booked riders for pre-trip confirmation.
      */
-    public function driverManifest(): JsonResponse
+    public function driverManifest(Request $request): JsonResponse
     {
         $user = Auth::user();
 
@@ -186,14 +205,44 @@ class BookingController extends Controller
             return response()->json(['error' => 'حساب السائق مطلوب'], 403);
         }
 
-        $route = $user->driverRoute;
+        $dateParam = trim((string) $request->query('date', ''));
+        $targetDate = $dateParam !== '' ? $dateParam : today()->toDateString();
+        try {
+            $parsedDate = Carbon::parse($targetDate);
+        } catch (\Exception $e) {
+            $parsedDate = today();
+            $targetDate = $parsedDate->toDateString();
+        }
+
+        $dayOfWeek = $parsedDate->dayOfWeek;
+        $isToday = $parsedDate->isToday();
+        $todayDate = today()->toDateString();
+        $tomorrowDate = today()->addDay()->toDateString();
+
+        // Check driver's schedule for this day to pick scheduled route if available
+        $schedule = $user->schedules()->where('day_of_week', $dayOfWeek)->first();
+        $route = ($schedule && $schedule->route_id)
+            ? DriverRoute::find($schedule->route_id)
+            : ($user->driverRoute ?? $user->driverRoutes()->first());
+
         if (! $route) {
             return response()->json(['error' => 'لا يوجد مسار مسجل للسائق'], 404);
         }
 
-        $bookings = Booking::where('route_id', $route->id)
+        $bookingsQuery = Booking::where('route_id', $route->id)
             ->with(['rider', 'locationShare'])
-            ->latest()
+            ->latest();
+
+        if ($isToday) {
+            $bookingsQuery->where(function ($q) use ($targetDate) {
+                $q->whereDate('travel_date', $targetDate)
+                    ->orWhereNull('travel_date');
+            });
+        } else {
+            $bookingsQuery->whereDate('travel_date', $targetDate);
+        }
+
+        $bookings = $bookingsQuery
             ->get()
             ->map(function (Booking $b) {
                 // Privacy Enforcement: phone unlocked if status is confirmed, boarded, or completed
@@ -207,6 +256,7 @@ class BookingController extends Controller
                     'rider_phone' => $canCall ? $b->rider->phone : null,
                     'can_call' => $canCall,
                     'seats' => $b->seats,
+                    'travel_date' => $b->travel_date ? Carbon::parse($b->travel_date)->toDateString() : $b->created_at->toDateString(),
                     'pickup_stop' => $b->pickup_stop,
                     'dropoff_stop' => $b->dropoff_stop,
                     'fare_ils' => $b->fare_ils,
@@ -226,12 +276,49 @@ class BookingController extends Controller
                 ];
             });
 
+        // Calculate counts for manifest day tabs
+        $todayCount = (int) Booking::where('route_id', $route->id)
+            ->whereIn('status', ['confirmed', 'boarded'])
+            ->where(function ($q) use ($todayDate) {
+                $q->whereDate('travel_date', $todayDate)
+                    ->orWhereNull('travel_date');
+            })
+            ->count();
+
+        $tomorrowCount = (int) Booking::where('route_id', $route->id)
+            ->whereIn('status', ['confirmed', 'boarded'])
+            ->whereDate('travel_date', $tomorrowDate)
+            ->count();
+
+        $vehicle = $user->vehicle;
+        $totalCapacity = $vehicle ? (int) $vehicle->seat_count : 0;
+
+        $targetBookedSeatsQuery = Booking::where('route_id', $route->id)
+            ->where('status', 'confirmed');
+
+        if ($isToday) {
+            $targetBookedSeatsQuery->where(function ($q) use ($targetDate) {
+                $q->whereDate('travel_date', $targetDate)
+                    ->orWhereNull('travel_date');
+            });
+        } else {
+            $targetBookedSeatsQuery->whereDate('travel_date', $targetDate);
+        }
+
+        $targetBookedSeats = (int) $targetBookedSeatsQuery->sum('seats');
+        $targetFreeSeats = max(0, $totalCapacity - $targetBookedSeats);
+
         return response()->json([
             'ok' => true,
+            'route_id' => $route->id,
             'route_name' => $route->name,
+            'target_date' => $targetDate,
+            'is_today' => $isToday,
+            'today_count' => $todayCount,
+            'tomorrow_count' => $tomorrowCount,
             'is_trip_active' => (bool) $route->is_trip_active,
-            'booked_seats' => $route->bookedSeatsCount(),
-            'free_seats' => $route->freeSeatsCount(),
+            'booked_seats' => $targetBookedSeats,
+            'free_seats' => $targetFreeSeats,
             'manifest' => $bookings,
         ]);
     }
@@ -421,6 +508,7 @@ class BookingController extends Controller
 
         return [
             'id' => $booking->id,
+            'travel_date' => $booking->travel_date ? Carbon::parse($booking->travel_date)->toDateString() : $booking->created_at->toDateString(),
             'status' => $booking->status,
             'status_arabic' => $booking->status_arabic,
             'cancellation_reason' => $booking->cancellation_reason,
