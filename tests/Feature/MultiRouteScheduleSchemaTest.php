@@ -6,7 +6,6 @@ use App\Models\Booking;
 use App\Models\DriverRoute;
 use App\Models\DriverSchedule;
 use App\Models\User;
-use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
