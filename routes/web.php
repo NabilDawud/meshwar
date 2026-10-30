@@ -54,10 +54,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver', function () {
         /** @var User $user */
         $user = Auth::user();
+        $user->load(['vehicle', 'driverRoutes', 'schedules.route']);
         $vehicle = $user->vehicle;
-        $route = $user->driverRoute;
-        $driverRoutes = $user->driverRoutes()->orderBy('id', 'asc')->get();
-        $schedules = DriverScheduleController::getDriverWeeklySchedule($user);
+        $driverRoutes = $user->driverRoutes;
+        $route = $driverRoutes->firstWhere('is_active', true) ?? $driverRoutes->first();
+        $schedules = DriverScheduleController::getDriverWeeklySchedule($user, $user->schedules, $route);
         $todaySchedule = collect($schedules)->firstWhere('day_of_week', now()->dayOfWeek);
 
         return view('driver.dashboard', compact('vehicle', 'route', 'driverRoutes', 'schedules', 'todaySchedule'));

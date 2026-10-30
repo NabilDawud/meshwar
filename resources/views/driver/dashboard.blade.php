@@ -434,8 +434,8 @@
                 @php
                     $isToday = ($item['day_of_week'] === $currentDayOfWeek);
                 @endphp
-                <a href="{{ route('driver.schedule') }}" class="p-1.5 rounded-xl border text-[10px] flex flex-col items-center gap-0.5 transition {{ $isToday ? 'border-teal-500 bg-teal-100/60 dark:bg-teal-950/80 ring-2 ring-teal-500/30 font-bold' : ($item['is_day_off'] ? 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-400' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300') }}">
-                    <span class="font-bold truncate">{{ mb_substr($item['day_name_arabic'], 0, 2) }}</span>
+                <a href="{{ route('driver.schedule') }}" title="{{ $item['day_name_arabic'] }} - {{ $item['is_day_off'] ? 'إجازة' : ($item['start_time'] . ' إلى ' . $item['end_time']) }}" class="p-1.5 rounded-xl border text-[10px] flex flex-col items-center gap-0.5 transition {{ $isToday ? 'border-teal-500 bg-teal-100/60 dark:bg-teal-950/80 ring-2 ring-teal-500/30 font-bold shadow-xs' : ($item['is_day_off'] ? 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-400' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300') }}">
+                    <span class="font-bold text-[11px] block">{{ $item['day_abbr'] ?? $item['day_name_arabic'] }}</span>
                     <span>{{ $item['is_day_off'] ? '🏖️' : '🟢' }}</span>
                 </a>
             @endforeach

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Driver\DriverScheduleController;
 use App\Models\DriverRoute;
 use App\Models\DriverSchedule;
 use App\Models\User;
@@ -100,5 +101,25 @@ class DriverSchedulePageTest extends TestCase
         $response->assertSee('جدول ومواعيد العمل الأسبوعية');
         $response->assertSee('/driver/schedule');
         $response->assertSee('لوحة قيادة السائق');
+        // Verify day abbreviations without the "الـ" prefix are present
+        $response->assertSee('سب');
+        $response->assertSee('أح');
+        $response->assertSee('جم');
+    }
+
+    public function test_weekly_schedule_helper_includes_short_names_and_abbreviations(): void
+    {
+        $schedules = DriverScheduleController::getDriverWeeklySchedule($this->driver);
+
+        $this->assertCount(7, $schedules);
+        $saturday = collect($schedules)->firstWhere('day_of_week', 6);
+        $this->assertEquals('السبت', $saturday['day_name_arabic']);
+        $this->assertEquals('سبت', $saturday['day_short_name']);
+        $this->assertEquals('سب', $saturday['day_abbr']);
+
+        $friday = collect($schedules)->firstWhere('day_of_week', 5);
+        $this->assertEquals('الجمعة', $friday['day_name_arabic']);
+        $this->assertEquals('جمعة', $friday['day_short_name']);
+        $this->assertEquals('جم', $friday['day_abbr']);
     }
 }

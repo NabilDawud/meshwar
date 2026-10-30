@@ -261,8 +261,8 @@
             notifications: [],
             pollTimer: null,
 
-            async init() {
-                await this.fetchNotifications();
+            init() {
+                this.fetchNotifications();
                 // Periodic background poll every 20s
                 this.pollTimer = setInterval(() => {
                     if (navigator.onLine) {

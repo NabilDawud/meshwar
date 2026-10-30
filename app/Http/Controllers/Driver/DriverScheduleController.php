@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
+use App\Models\DriverRoute;
 use App\Models\DriverSchedule;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class DriverScheduleController extends Controller
@@ -26,23 +28,61 @@ class DriverScheduleController extends Controller
     ];
 
     /**
+     * Clean short day names without the leading "الـ" prefix.
+     */
+    public const DAYS_SHORT = [
+        6 => 'سبت',
+        0 => 'أحد',
+        1 => 'إثنين',
+        2 => 'ثلاثاء',
+        3 => 'أربعاء',
+        4 => 'خميس',
+        5 => 'جمعة',
+    ];
+
+    /**
+     * 2-letter day abbreviations for compact mobile displays.
+     */
+    public const DAYS_ABBR = [
+        6 => 'سب',
+        0 => 'أح',
+        1 => 'اث',
+        2 => 'ثل',
+        3 => 'أر',
+        4 => 'خم',
+        5 => 'جم',
+    ];
+
+    /**
      * Retrieve the authenticated driver's 7-day schedule matrix.
      *
-     * @return array<int, array{id: ?int, day_of_week: int, day_name_arabic: string, route_id: ?int, route_name: ?string, start_time: string, end_time: string, is_day_off: bool}>
+     * @param  Collection|null  $preloadedSchedules
+     * @param  DriverRoute|null  $preloadedRoute
+     * @return array<int, array{id: ?int, day_of_week: int, day_name_arabic: string, day_short_name: string, day_abbr: string, route_id: ?int, route_name: ?string, start_time: string, end_time: string, is_day_off: bool}>
      */
-    public static function getDriverWeeklySchedule(User $user): array
+    public static function getDriverWeeklySchedule(User $user, $preloadedSchedules = null, $preloadedRoute = null): array
     {
-        $existing = $user->schedules()->with('route')->get()->keyBy('day_of_week');
-        $activeRoute = $user->driverRoute;
+        if ($preloadedSchedules !== null) {
+            $existing = $preloadedSchedules->keyBy('day_of_week');
+        } else {
+            $existing = $user->schedules()->with('route')->get()->keyBy('day_of_week');
+        }
+
+        $activeRoute = $preloadedRoute ?? ($user->driverRoute ?? $user->driverRoutes()->first());
 
         $schedules = [];
         foreach (self::DAYS_ORDER as $dayNum => $dayName) {
+            $shortName = self::DAYS_SHORT[$dayNum] ?? $dayName;
+            $abbr = self::DAYS_ABBR[$dayNum] ?? $dayName;
+
             if ($existing->has($dayNum)) {
                 $sched = $existing->get($dayNum);
                 $schedules[] = [
                     'id' => $sched->id,
                     'day_of_week' => $dayNum,
                     'day_name_arabic' => $dayName,
+                    'day_short_name' => $shortName,
+                    'day_abbr' => $abbr,
                     'route_id' => $sched->route_id,
                     'route_name' => $sched->route?->name,
                     'start_time' => $sched->start_time ?? '07:00',
@@ -56,6 +96,8 @@ class DriverScheduleController extends Controller
                     'id' => null,
                     'day_of_week' => $dayNum,
                     'day_name_arabic' => $dayName,
+                    'day_short_name' => $shortName,
+                    'day_abbr' => $abbr,
                     'route_id' => $isFriday ? null : $activeRoute?->id,
                     'route_name' => $isFriday ? null : $activeRoute?->name,
                     'start_time' => '07:00',
@@ -80,9 +122,10 @@ class DriverScheduleController extends Controller
             abort(403, 'غير مصرح - حساب السائق مطلوب');
         }
 
-        $routes = $user->driverRoutes()->orderBy('id', 'asc')->get();
-        $schedules = self::getDriverWeeklySchedule($user);
-        $activeRoute = $user->driverRoute;
+        $user->load(['driverRoutes', 'schedules.route']);
+        $routes = $user->driverRoutes;
+        $activeRoute = $routes->firstWhere('is_active', true) ?? $routes->first();
+        $schedules = self::getDriverWeeklySchedule($user, $user->schedules, $activeRoute);
 
         return view('driver.schedule', compact('routes', 'schedules', 'activeRoute'));
     }

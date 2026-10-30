@@ -86,9 +86,9 @@
                 <div class="p-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60">
                     <div class="flex items-center gap-2.5">
                         <span 
-                            class="w-9 h-9 rounded-2xl flex items-center justify-center font-black text-xs shrink-0" 
+                            class="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xs" 
                             :class="s.is_day_off ? 'bg-slate-200 dark:bg-slate-700 text-slate-500' : 'bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300'" 
-                            x-text="s.day_name_arabic.slice(0, 2)"
+                            x-text="s.day_abbr || s.day_short_name || s.day_name_arabic"
                         ></span>
                         <div>
                             <span class="font-black text-sm text-slate-800 dark:text-slate-100 block" x-text="s.day_name_arabic"></span>
@@ -96,15 +96,29 @@
                         </div>
                     </div>
 
-                    <!-- Work / Day-Off Quick Toggle Button -->
-                    <button 
-                        type="button" 
-                        @click="s.is_day_off = !s.is_day_off" 
-                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border"
-                        :class="s.is_day_off ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300' : 'bg-teal-50 dark:bg-teal-950/50 border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300'"
-                    >
-                        <span x-text="s.is_day_off ? '🏖️ إجازة' : '🟢 يوم عمل'"></span>
-                    </button>
+                    <!-- Work vs Holiday Interactive Segmented Control -->
+                    <div class="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 select-none shadow-xs">
+                        <button 
+                            type="button" 
+                            @click="s.is_day_off = false" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95"
+                            :class="!s.is_day_off ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'"
+                            title="تفعيل الدوام لهذا اليوم"
+                        >
+                            <span>🟢</span>
+                            <span>عمل</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="s.is_day_off = true" 
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95"
+                            :class="s.is_day_off ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'"
+                            title="تحديد هذا اليوم كإجازة أسبوعية"
+                        >
+                            <span>🏖️</span>
+                            <span>إجازة</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Day Content: Active Work Shift -->
@@ -182,17 +196,18 @@
                 </div>
 
                 <!-- Day Content: Day-Off State -->
-                <div x-show="s.is_day_off" class="p-4 flex items-center justify-between bg-slate-100/50 dark:bg-slate-900/50 text-xs text-slate-500 dark:text-slate-400">
+                <div x-show="s.is_day_off" class="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-100/60 dark:bg-slate-900/60 text-xs text-slate-500 dark:text-slate-400">
                     <div class="flex items-center gap-2">
-                        <span class="text-xl">🏖️</span>
-                        <span>إجازة أسبوعية (مركبتك لن تظهر في بحث الركاب لهذا اليوم)</span>
+                        <span class="text-2xl">🏖️</span>
+                        <span>إجازة أسبوعية (مركبتك لن تظهر في بحث وتواجد الركاب لهذا اليوم)</span>
                     </div>
                     <button 
                         type="button" 
                         @click="s.is_day_off = false" 
-                        class="text-[11px] font-bold text-teal-600 dark:text-teal-400 hover:underline shrink-0"
+                        class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition active:scale-95 flex items-center gap-1.5 shrink-0 self-end sm:self-auto"
                     >
-                        تفعيل العمل لهذا اليوم
+                        <span>🟢</span>
+                        <span>تفعيل دوام العمل</span>
                     </button>
                 </div>
             </div>
