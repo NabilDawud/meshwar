@@ -177,4 +177,14 @@ class DriverScheduleApiTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('خط الرشيد الساحلي');
     }
+
+    public function test_driver_can_set_a_route_as_primary(): void
+    {
+        $res = $this->actingAs($this->driver)->postJson("/api/driver/routes/{$this->route2->id}/primary");
+        $res->assertStatus(200)
+            ->assertJson(['ok' => true]);
+
+        $this->assertTrue($this->route2->fresh()->is_active);
+        $this->assertFalse($this->route1->fresh()->is_active);
+    }
 }

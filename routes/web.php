@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/driver/vehicle', [DriverVehicleController::class, 'show'])->name('api.driver.vehicle.show');
     Route::post('/api/driver/vehicle', [DriverVehicleController::class, 'store'])->name('api.driver.vehicle.store');
     Route::get('/api/driver/routes', [DriverRouteController::class, 'index'])->name('api.driver.routes.index');
+    Route::post('/api/driver/routes/{id}/primary', [DriverRouteController::class, 'makePrimary'])->name('api.driver.routes.primary');
     Route::delete('/api/driver/routes/{id}', [DriverRouteController::class, 'destroy'])->name('api.driver.routes.destroy');
     Route::get('/api/driver/route', [DriverRouteController::class, 'show'])->name('api.driver.route.show');
     Route::post('/api/driver/route', [DriverRouteController::class, 'store'])->name('api.driver.route.store');

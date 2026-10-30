@@ -28,33 +28,49 @@
         </div>
     </div>
 
-    <!-- Route Switcher Tabs (Select which route to view and edit) -->
+    <!-- Route Switcher (Select which route to view and edit) -->
     @if(isset($allRoutes) && $allRoutes->isNotEmpty())
+        @php
+            $primaryRoute = $allRoutes->firstWhere('is_active', true) ?? $allRoutes->first();
+        @endphp
         <div class="flex flex-col gap-2">
-            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">مساراتك المسجلة (اضغط لاختيار المسار وتعديله):</label>
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <div class="flex items-center justify-between">
+                <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400">مساراتك المسجلة (اضغط لاختيار المسار وتعديله):</label>
+                <span class="text-[10px] text-teal-600 dark:text-teal-400 font-bold font-mono">{{ $allRoutes->count() }} مسارات</span>
+            </div>
+
+            <!-- Responsive Wrap Grid (Never overflows screen) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 @foreach($allRoutes as $r)
                     @php
                         $isSelected = ($route && $route->id === $r->id && !request()->has('new'));
+                        $isPrimary = ($primaryRoute && $primaryRoute->id === $r->id);
                     @endphp
                     <a 
                         href="{{ route('driver.route', ['route_id' => $r->id]) }}"
-                        class="px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 border {{ $isSelected ? 'bg-teal-600 text-white border-teal-600 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500' }}"
+                        class="p-3 rounded-2xl text-xs font-bold transition flex items-center justify-between border {{ $isSelected ? 'bg-teal-600 text-white border-teal-600 shadow-sm ring-2 ring-teal-500/20' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-500' }}"
                     >
-                        <span>📍</span>
-                        <span class="truncate max-w-[150px]">{{ $r->name }}</span>
-                        @if($r->is_active)
-                            <span class="text-[9px] px-1.5 py-0.2 rounded-full {{ $isSelected ? 'bg-white/20 text-white' : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300' }}">الرئيسي</span>
-                        @endif
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-base shrink-0">📍</span>
+                            <span class="truncate">{{ $r->name }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            @if($isPrimary)
+                                <span class="text-[10px] px-2 py-0.5 rounded-full {{ $isSelected ? 'bg-white/20 text-white font-black' : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300' }}">الرئيسي</span>
+                            @endif
+                            @if($isSelected)
+                                <span class="text-[11px] font-black">✓ قيد التعديل</span>
+                            @endif
+                        </div>
                     </a>
                 @endforeach
 
                 <a 
                     href="{{ route('driver.route', ['new' => 1]) }}"
-                    class="px-3.5 py-2 rounded-2xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 border border-dashed {{ request()->has('new') ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100' }}"
+                    class="p-3 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 border-2 border-dashed {{ request()->has('new') ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100' }}"
                 >
-                    <span>➕</span>
-                    <span>مسار جديد</span>
+                    <span class="text-base">➕</span>
+                    <span>رسم مسار خط جديد</span>
                 </a>
             </div>
         </div>
@@ -249,7 +265,7 @@
             </div>
         </div>
 
-        <!-- Submit and Delete Actions -->
+        <!-- Submit, Set Primary, and Delete Actions -->
         <div class="flex items-center gap-2">
             <button 
                 type="button" 
@@ -261,6 +277,19 @@
                 <span x-show="isSubmitting">جاري الحفظ...</span>
             </button>
 
+            @if(isset($allRoutes) && $allRoutes->count() > 1 && $route && $route->id !== ($primaryRoute?->id ?? null))
+                <button 
+                    type="button" 
+                    @click="makePrimary" 
+                    :disabled="isSubmitting"
+                    class="px-3.5 min-h-[48px] bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-2xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shrink-0"
+                    title="تعيين هذا المسار كمسار رئيسي افتراضي"
+                >
+                    <span>⭐️</span>
+                    <span class="hidden sm:inline">تعيين كرئيسي</span>
+                </button>
+            @endif
+
             @if(isset($allRoutes) && $allRoutes->count() > 1 && $route)
                 <button 
                     type="button" 
@@ -270,7 +299,7 @@
                     title="حذف هذا المسار"
                 >
                     <span>🗑️</span>
-                    <span>حذف المسار</span>
+                    <span class="hidden sm:inline">حذف المسار</span>
                 </button>
             @endif
         </div>
@@ -490,6 +519,31 @@ function routeBuilder(init) {
                 }
             } catch (err) {
                 alert('فشل الاتصال بالخادم لحذف المسار');
+            } finally {
+                this.isSubmitting = false;
+            }
+        },
+
+        async makePrimary() {
+            if (!this.routeId) return;
+            this.isSubmitting = true;
+            try {
+                const res = await fetch(`/api/driver/routes/${this.routeId}/primary`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert('تم تعيين هذا المسار كمسار رئيسي بنجاح.');
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'تعذر تعيين المسار كمسار رئيسي');
+                }
+            } catch (err) {
+                alert('فشل الاتصال بالخادم');
             } finally {
                 this.isSubmitting = false;
             }

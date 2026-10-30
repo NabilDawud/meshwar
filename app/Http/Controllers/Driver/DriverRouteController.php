@@ -305,4 +305,27 @@ class DriverRouteController extends Controller
             'message' => 'تم حذف المسار بنجاح',
         ]);
     }
+
+    /**
+     * Set a specific route as the driver's primary default route.
+     */
+    public function makePrimary(int $id): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
+        $targetRoute = DriverRoute::where('driver_id', $user->id)->findOrFail($id);
+
+        $user->driverRoutes()->where('id', '!=', $id)->update(['is_active' => false]);
+        $targetRoute->update(['is_active' => true]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم تعيين المسار كمسار رئيسي بنجاح',
+            'route' => $targetRoute,
+        ]);
+    }
 }

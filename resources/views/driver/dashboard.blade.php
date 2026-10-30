@@ -330,21 +330,27 @@
 
         <!-- Multiple Routes Quick Switcher Pills -->
         @if(isset($driverRoutes) && $driverRoutes->count() > 1)
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pt-1 border-t border-slate-100 dark:border-slate-700/60">
+            @php
+                $primaryRoute = $driverRoutes->firstWhere('is_active', true) ?? $driverRoutes->first();
+            @endphp
+            <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-700/60">
                 <span class="text-[10px] text-slate-400 shrink-0 font-bold">مساراتك ({{ $driverRoutes->count() }}):</span>
                 @foreach($driverRoutes as $r)
                     @php
                         $isCurrentRoute = ($route && $route->id === $r->id);
+                        $isPrimary = ($primaryRoute && $primaryRoute->id === $r->id);
                     @endphp
                     <a 
                         href="{{ route('driver.route', ['route_id' => $r->id]) }}" 
-                        class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 shrink-0 {{ $isCurrentRoute ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-800 dark:text-teal-200 ring-1 ring-teal-500/20' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300' }}"
+                        class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 {{ $isCurrentRoute ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-teal-800 dark:text-teal-200 ring-1 ring-teal-500/20' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300' }}"
                         title="انقر لتعديل هذا المسار"
                     >
                         <span>📍</span>
-                        <span class="truncate max-w-[120px]">{{ $r->name }}</span>
+                        <span class="truncate max-w-[130px]">{{ $r->name }}</span>
                         @if($isCurrentRoute)
                             <span class="text-[9px] bg-teal-200 dark:bg-teal-900 text-teal-900 dark:text-teal-200 px-1 rounded">مسار اليوم</span>
+                        @elseif($isPrimary)
+                            <span class="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1 rounded">الرئيسي</span>
                         @endif
                     </a>
                 @endforeach
