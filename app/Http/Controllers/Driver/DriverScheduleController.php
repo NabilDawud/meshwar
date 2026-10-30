@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
 use App\Models\DriverSchedule;
+use App\Models\User;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +15,7 @@ class DriverScheduleController extends Controller
     /**
      * Day definitions ordered from Saturday (start of week in Palestine) to Friday.
      */
-    protected const DAYS_ORDER = [
+    public const DAYS_ORDER = [
         6 => 'السبت',
         0 => 'الأحد',
         1 => 'الإثنين',
@@ -24,16 +26,12 @@ class DriverScheduleController extends Controller
     ];
 
     /**
-     * Retrieve the authenticated driver's 7-day schedule.
+     * Retrieve the authenticated driver's 7-day schedule matrix.
+     *
+     * @return array<int, array{id: ?int, day_of_week: int, day_name_arabic: string, route_id: ?int, route_name: ?string, start_time: string, end_time: string, is_day_off: bool}>
      */
-    public function index(): JsonResponse
+    public static function getDriverWeeklySchedule(User $user): array
     {
-        $user = Auth::user();
-
-        if ($user->role !== 'driver') {
-            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
-        }
-
         $existing = $user->schedules()->with('route')->get()->keyBy('day_of_week');
         $activeRoute = $user->driverRoute;
 
@@ -67,9 +65,42 @@ class DriverScheduleController extends Controller
             }
         }
 
+        return $schedules;
+    }
+
+    /**
+     * Render the dedicated mobile-optimized weekly schedule management page.
+     */
+    public function showView(): View
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            abort(403, 'غير مصرح - حساب السائق مطلوب');
+        }
+
+        $routes = $user->driverRoutes()->orderBy('id', 'asc')->get();
+        $schedules = self::getDriverWeeklySchedule($user);
+        $activeRoute = $user->driverRoute;
+
+        return view('driver.schedule', compact('routes', 'schedules', 'activeRoute'));
+    }
+
+    /**
+     * Retrieve the authenticated driver's 7-day schedule.
+     */
+    public function index(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($user->role !== 'driver') {
+            return response()->json(['error' => 'حساب السائق مطلوب'], 403);
+        }
+
         return response()->json([
             'ok' => true,
-            'schedules' => $schedules,
+            'schedules' => self::getDriverWeeklySchedule($user),
         ]);
     }
 

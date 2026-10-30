@@ -22,12 +22,48 @@
         </div>
     </div>
 
+    <!-- Quick Driver Portal Navigation -->
+    <div class="grid grid-cols-4 gap-2">
+        <a href="{{ route('driver.manifest') }}" class="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-center flex flex-col items-center gap-1 text-xs hover:border-teal-500 transition active:scale-95 shadow-xs">
+            <span class="text-lg">📋</span>
+            <span class="font-bold text-[11px] truncate">الركاب</span>
+        </a>
+
+        <a href="{{ route('driver.schedule') }}" class="p-2.5 rounded-2xl bg-teal-50/50 dark:bg-teal-950/40 border border-teal-500/50 text-teal-800 dark:text-teal-200 text-center flex flex-col items-center gap-1 text-xs hover:border-teal-500 transition active:scale-95 shadow-xs">
+            <span class="text-lg">📅</span>
+            <span class="font-bold text-[11px] truncate">الجدول</span>
+        </a>
+
+        <a href="{{ route('driver.route') }}" class="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-center flex flex-col items-center gap-1 text-xs hover:border-teal-500 transition active:scale-95 shadow-xs">
+            <span class="text-lg">🗺️</span>
+            <span class="font-bold text-[11px] truncate">المسار</span>
+        </a>
+
+        <a href="{{ route('driver.vehicle') }}" class="p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-center flex flex-col items-center gap-1 text-xs hover:border-teal-500 transition active:scale-95 shadow-xs">
+            <span class="text-lg">🛞</span>
+            <span class="font-bold text-[11px] truncate">المركبة</span>
+        </a>
+    </div>
+
+    <!-- Dashboard Feedback Toast Notice -->
+    <div x-show="dashboardToast" x-cloak class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-xs font-bold flex items-center justify-between transition shadow-xs">
+        <span x-text="dashboardToast"></span>
+        <button type="button" @click="dashboardToast = null" class="text-xs px-2 font-black">✕</button>
+    </div>
+
     <!-- Quick Operational Status Bar (Active State Machine) -->
     @if($route)
         <div class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col gap-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">حالة التشغيل الحالية:</span>
-                <span class="text-xs font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300" x-text="statusArabic"></span>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400">حالة التشغيل:</span>
+                    <span class="text-xs font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300" x-text="statusArabic"></span>
+                </div>
+                <div class="flex items-center text-[10px] font-bold">
+                    <span x-show="syncState === 'syncing'" class="text-amber-600 dark:text-amber-400 animate-pulse">⚡ جاري المزامنة...</span>
+                    <span x-show="syncState === 'synced'" class="text-teal-600 dark:text-teal-400">✓ متزامن</span>
+                    <span x-show="syncState === 'offline_saved'" class="text-amber-600 dark:text-amber-400">📡 أوفلاين (محفوظ محلياً)</span>
+                </div>
             </div>
             
             @php
@@ -335,132 +371,105 @@
         @endif
     </div>
 
-    <!-- Weekly Schedule & Multi-Route Planner Card -->
-    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200 dark:border-slate-700 flex flex-col gap-4 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
-            <div class="flex items-center gap-2.5">
+    <!-- Weekly Schedule & Operating Hours Overview Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200 dark:border-slate-700 flex flex-col gap-3.5 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
                 <span class="text-2xl">📅</span>
                 <div>
-                    <h2 class="font-black text-sm sm:text-base text-slate-800 dark:text-slate-100">جدول مواعيد ومسارات الأسبوع</h2>
-                    <p class="text-[11px] text-slate-400">حدد خط السير وساعات العمل أو الإجازة لكل يوم لتمكين الركاب من الحجز المسبق</p>
+                    <h2 class="font-black text-sm text-slate-800 dark:text-slate-100">جدول ومواعيد العمل الأسبوعية</h2>
+                    <p class="text-[11px] text-slate-400">تنظيم خطوط السير وأوقات الورديات للحجز المسبق</p>
                 </div>
             </div>
-            <button 
-                type="button" 
-                @click="copySaturdayToAllWorkdays" 
-                class="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto active:scale-95 shadow-sm"
-                title="نسخ ساعات ومسار يوم السبت إلى الأحد، الإثنين، الثلاثاء، والأربعاء، والخميس"
-            >
-                <span>⚡</span>
-                <span>تطبيق مواعيد السبت على باقي الأيام</span>
-            </button>
+            <a href="{{ route('driver.schedule') }}" class="text-xs font-black text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1">
+                <span>تعديل الجدول</span>
+                <span>➔</span>
+            </a>
         </div>
 
-        <!-- Schedule Toast Notice -->
-        <div x-show="scheduleToast" x-cloak class="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-700 text-teal-800 dark:text-teal-200 text-xs font-bold flex items-center justify-between">
-            <span x-text="scheduleToast"></span>
-            <button type="button" @click="scheduleToast = null" class="text-xs px-2">✕</button>
-        </div>
+        @php
+            $dayNames = [
+                6 => 'السبت',
+                0 => 'الأحد',
+                1 => 'الإثنين',
+                2 => 'الثلاثاء',
+                3 => 'الأربعاء',
+                4 => 'الخميس',
+                5 => 'الجمعة',
+            ];
+            $currentDayOfWeek = now()->dayOfWeek;
+            $currentDayName = $dayNames[$currentDayOfWeek] ?? 'اليوم';
+        @endphp
 
-        <!-- Loading Skeletons -->
-        <div x-show="loadingSchedules" class="flex flex-col gap-2.5 py-4">
-            <template x-for="i in 4" :key="i">
-                <div class="h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/50 animate-pulse"></div>
-            </template>
-        </div>
-
-        <!-- 7-Day Matrix -->
-        <div x-show="!loadingSchedules" class="flex flex-col gap-2.5">
-            <template x-for="s in schedules" :key="s.day_of_week">
-                <div 
-                    class="p-3 sm:p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    :class="s.is_day_off ? 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-80' : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 shadow-sm'"
-                >
-                    <!-- Day Name & Day-Off Toggle -->
-                    <div class="flex items-center justify-between sm:justify-start gap-3 sm:w-48 shrink-0">
-                        <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs" :class="s.is_day_off ? 'bg-slate-200 dark:bg-slate-700 text-slate-500' : 'bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300'" x-text="s.day_name_arabic.slice(0, 2)"></span>
-                            <span class="font-black text-sm text-slate-800 dark:text-slate-100" x-text="s.day_name_arabic"></span>
-                        </div>
-
-                        <!-- Toggle Day-Off -->
-                        <label class="flex items-center gap-1.5 cursor-pointer text-xs select-none">
-                            <input 
-                                type="checkbox" 
-                                x-model="s.is_day_off" 
-                                class="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-600"
-                            >
-                            <span :class="s.is_day_off ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400'">إجازة</span>
-                        </label>
-                    </div>
-
-                    <!-- Work Shift Controls (Route & Hours) -->
-                    <template x-if="!s.is_day_off">
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
-                            <!-- Route Select -->
-                            <div class="flex-1">
-                                <select 
-                                    x-model="s.route_id" 
-                                    class="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
-                                >
-                                    <template x-for="r in driverRoutes" :key="r.id">
-                                        <option :value="r.id" x-text="r.name" :selected="s.route_id == r.id"></option>
-                                    </template>
-                                </select>
-                            </div>
-
-                            <!-- Shift Hours -->
-                            <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                                <span class="text-[11px] font-bold">من:</span>
-                                <input 
-                                    type="time" 
-                                    x-model="s.start_time" 
-                                    class="h-10 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
-                                >
-                                <span class="text-[11px] font-bold">إلى:</span>
-                                <input 
-                                    type="time" 
-                                    x-model="s.end_time" 
-                                    class="h-10 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-500"
-                                >
-                            </div>
-                        </div>
-                    </template>
-
-                    <!-- Day-Off Badge -->
-                    <template x-if="s.is_day_off">
-                        <div class="flex-1 flex items-center justify-end text-xs text-slate-400 italic gap-1.5 py-1">
-                            <span>🏖️</span>
-                            <span>إجازة أسبوعية (لا تظهر المركبة في بحث الركاب لهذا اليوم)</span>
-                        </div>
-                    </template>
+        <!-- Today's Operational Shift Status -->
+        <div class="p-3.5 rounded-2xl border {{ ($todaySchedule && !empty($todaySchedule['is_day_off'])) ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700' : 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800' }} flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xl">{{ ($todaySchedule && !empty($todaySchedule['is_day_off'])) ? '🏖️' : '🟢' }}</span>
+                <div>
+                    <span class="font-black text-slate-800 dark:text-slate-100 block">
+                        دوام اليوم ({{ $currentDayName }}):
+                        @if($todaySchedule && !empty($todaySchedule['is_day_off']))
+                            <span class="text-rose-600 dark:text-rose-400 font-bold">إجازة أسبوعية</span>
+                        @else
+                            <span class="text-teal-700 dark:text-teal-300 font-mono font-bold">{{ $todaySchedule['start_time'] ?? '07:00' }} - {{ $todaySchedule['end_time'] ?? '16:00' }}</span>
+                        @endif
+                    </span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">
+                        @if($todaySchedule && !empty($todaySchedule['is_day_off']))
+                            مركبتك لن تظهر في بحث وتواجد الركاب اليوم
+                        @else
+                            المسار: {{ $todaySchedule['route_name'] ?? ($route->name ?? 'خط السير المعتمد') }}
+                        @endif
+                    </span>
                 </div>
-            </template>
+            </div>
+            <a href="{{ route('driver.schedule') }}" class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 transition active:scale-95">
+                تغيير
+            </a>
         </div>
 
-        <!-- Save Schedule Button -->
-        <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-            <span class="text-[11px] text-slate-400">تحديث المواعيد ينعكس فوراً على خريطة وتطبيق الركاب</span>
-            <button 
-                type="button" 
-                @click="saveSchedules" 
-                :disabled="savingSchedules || loadingSchedules" 
-                class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center gap-1.5"
-            >
-                <span x-show="!savingSchedules">حفظ جدول الأسبوع 💾</span>
-                <span x-show="savingSchedules">جاري الحفظ...</span>
-            </button>
+        <!-- 7-Day Mini Timeline Bar -->
+        <div class="grid grid-cols-7 gap-1 pt-1 text-center">
+            @foreach($schedules ?? [] as $item)
+                @php
+                    $isToday = ($item['day_of_week'] === $currentDayOfWeek);
+                @endphp
+                <a href="{{ route('driver.schedule') }}" class="p-1.5 rounded-xl border text-[10px] flex flex-col items-center gap-0.5 transition {{ $isToday ? 'border-teal-500 bg-teal-100/60 dark:bg-teal-950/80 ring-2 ring-teal-500/30 font-bold' : ($item['is_day_off'] ? 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-400' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300') }}">
+                    <span class="font-bold truncate">{{ mb_substr($item['day_name_arabic'], 0, 2) }}</span>
+                    <span>{{ $item['is_day_off'] ? '🏖️' : '🟢' }}</span>
+                </a>
+            @endforeach
         </div>
+
+        <!-- Call to Action button -->
+        <a href="{{ route('driver.schedule') }}" class="w-full py-2.5 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+            <span>📅 تخصيص جدول ومسارات الأسبوع بالتفصيل</span>
+            <span>➔</span>
+        </a>
     </div>
 </div>
 
 @push('scripts')
 <script src="/js/gaza-geo-sync.js"></script>
 <script>
+const STATUS_MAP = {
+    on_route: 'عامل على الخط المعتاد',
+    temporary_route: 'مسار مؤقت',
+    off_route: 'خارج الخط مؤقتاً',
+    skip_work: 'إجازة اليوم'
+};
+
+const DIRECTION_MAP = {
+    outbound: 'رحلة الذهاب',
+    return: 'رحلة العودة'
+};
+
 function driverDashboard(initialData) {
     return {
         status: initialData.status,
         statusArabic: initialData.statusArabic,
+        syncState: 'idle', // 'idle' | 'syncing' | 'synced' | 'offline_saved'
+        dashboardToast: null,
         activeDirection: '{{ $route->active_direction ?? 'outbound' }}',
         activeDirectionArabic: '{{ $route->active_direction_arabic ?? 'رحلة الذهاب' }}',
         isTwoWay: {{ ($route->is_two_way ?? true) ? 'true' : 'false' }},
@@ -471,95 +480,49 @@ function driverDashboard(initialData) {
         gpsWarning: null,
         lastSentPoint: @if($route->last_latitude && $route->last_longitude) { lat: {{ $route->last_latitude }}, lng: {{ $route->last_longitude }} } @else null @endif,
         tripTimer: null,
-        schedules: [],
-        driverRoutes: [],
-        loadingSchedules: false,
-        savingSchedules: false,
-        scheduleToast: null,
 
         init() {
-            this.fetchSchedules();
-        },
-
-        async fetchSchedules() {
-            this.loadingSchedules = true;
-            try {
-                const [routesRes, schedRes] = await Promise.all([
-                    fetch('{{ route('api.driver.routes.index') }}'),
-                    fetch('{{ route('api.driver.schedules.index') }}')
-                ]);
-                const routesData = await routesRes.json();
-                const schedData = await schedRes.json();
-
-                if (routesData.ok) {
-                    this.driverRoutes = routesData.routes;
-                }
-                if (schedData.ok) {
-                    this.schedules = schedData.schedules;
-                }
-            } catch (err) {
-                console.error('Failed to load schedules', err);
-            } finally {
-                this.loadingSchedules = false;
-            }
-        },
-
-        copySaturdayToAllWorkdays() {
-            const sat = this.schedules.find(s => s.day_of_week === 6);
-            if (!sat) return;
-
-            this.schedules.forEach(s => {
-                // Apply to Sunday through Thursday (0, 1, 2, 3, 4)
-                if ([0, 1, 2, 3, 4].includes(s.day_of_week)) {
-                    s.route_id = sat.route_id;
-                    s.start_time = sat.start_time;
-                    s.end_time = sat.end_time;
-                    s.is_day_off = sat.is_day_off;
+            // Listen to browser network changes for low-bandwidth / offline environments (Gaza)
+            window.addEventListener('online', () => {
+                if (this.syncState === 'offline_saved') {
+                    this.syncState = 'syncing';
+                    this.syncStatusWithServer(this.status);
                 }
             });
-            this.scheduleToast = '⚡ تم نسخ مواعيد السبت إلى باقي أيام العمل بنجاح! يرجى الضغط على حفظ الجدول أدناه.';
-            setTimeout(() => { this.scheduleToast = null; }, 5000);
         },
 
-        async saveSchedules() {
-            this.savingSchedules = true;
-            try {
-                const payload = {
-                    schedules: this.schedules.map(s => ({
-                        day_of_week: s.day_of_week,
-                        route_id: s.is_day_off ? null : (s.route_id || null),
-                        start_time: s.start_time || '07:00',
-                        end_time: s.end_time || '16:00',
-                        is_day_off: Boolean(s.is_day_off)
-                    }))
-                };
-
-                const res = await fetch('{{ route('api.driver.schedules.store') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.ok) {
-                    this.scheduleToast = '✅ تم حفظ جدول مواعيد ومسارات الأسبوع بنجاح!';
-                    setTimeout(() => { this.scheduleToast = null; }, 4000);
-                } else {
-                    alert(data.error || 'حدث خطأ أثناء حفظ الجدول');
+        showToast(msg) {
+            this.dashboardToast = msg;
+            setTimeout(() => {
+                if (this.dashboardToast === msg) {
+                    this.dashboardToast = null;
                 }
-            } catch (err) {
-                console.error('Failed to save schedules', err);
-                alert('فشل الاتصال بالخادم لحفظ الجدول');
-            } finally {
-                this.savingSchedules = false;
-            }
+            }, 4500);
         },
 
+        // Zero-Latency Optimistic UI Status Update
         async updateStatus(newStatus) {
+            if (this.status === newStatus && this.syncState !== 'offline_saved') {
+                return;
+            }
+
+            const prevStatus = this.status;
+            const prevArabic = this.statusArabic;
+
+            // 1. Instant local state switch (0ms delay)
             this.status = newStatus;
+            this.statusArabic = STATUS_MAP[newStatus] || newStatus;
+            this.syncState = 'syncing';
+
+            try {
+                localStorage.setItem('meshwar_driver_status', newStatus);
+            } catch(e) {}
+
+            // 2. Background Server Sync
+            await this.syncStatusWithServer(newStatus, prevStatus, prevArabic);
+        },
+
+        async syncStatusWithServer(newStatus, prevStatus = null, prevArabic = null) {
             try {
                 const res = await fetch('{{ route('api.driver.route.status') }}', {
                     method: 'POST',
@@ -570,18 +533,42 @@ function driverDashboard(initialData) {
                     },
                     body: JSON.stringify({ status: newStatus })
                 });
+
                 const data = await res.json();
                 if (data.ok) {
                     this.statusArabic = data.status_arabic;
+                    this.syncState = 'synced';
+                    setTimeout(() => {
+                        if (this.syncState === 'synced') this.syncState = 'idle';
+                    }, 2500);
+                } else {
+                    if (prevStatus) {
+                        this.status = prevStatus;
+                        this.statusArabic = prevArabic;
+                    }
+                    this.syncState = 'idle';
+                    this.showToast('تعذر حفظ الحالة: ' + (data.error || 'خطأ في الخادم'));
                 }
             } catch (err) {
-                console.error('Failed to update status', err);
+                console.warn('Network offline / weak in Gaza, saved locally', err);
+                this.syncState = 'offline_saved';
+                this.showToast('⚠️ تم حفظ حالتك محلياً بالهاتف (ضعف في الإنترنت). ستتم المزامنة تلقائياً عند استقرار الاتصال.');
             }
         },
 
+        // Zero-Latency Optimistic UI Direction Switch
         async updateDirection(newDirection) {
             if (this.activeDirection === newDirection) return;
+
+            const prevDirection = this.activeDirection;
+            const prevArabic = this.activeDirectionArabic;
+
+            // 1. Instant local state switch (0ms delay)
             this.activeDirection = newDirection;
+            this.activeDirectionArabic = DIRECTION_MAP[newDirection] || newDirection;
+            this.syncState = 'syncing';
+
+            // 2. Background Server Sync
             try {
                 const res = await fetch('{{ route('api.driver.route.direction') }}', {
                     method: 'POST',
@@ -595,14 +582,30 @@ function driverDashboard(initialData) {
                 const data = await res.json();
                 if (data.ok) {
                     this.activeDirectionArabic = data.active_direction_arabic;
+                    this.syncState = 'synced';
+                    setTimeout(() => {
+                        if (this.syncState === 'synced') this.syncState = 'idle';
+                    }, 2500);
+                } else {
+                    this.activeDirection = prevDirection;
+                    this.activeDirectionArabic = prevArabic;
+                    this.syncState = 'idle';
                 }
             } catch (err) {
-                console.error('Failed to update direction', err);
+                console.warn('Direction update offline, state preserved locally', err);
+                this.syncState = 'offline_saved';
             }
         },
 
+        // Zero-Latency Optimistic UI Corridor Type Toggle (Round-Trip vs One-Way)
         async toggleTwoWay() {
             const nextVal = !this.isTwoWay;
+
+            // 1. Instant local switch (0ms delay)
+            this.isTwoWay = nextVal;
+            this.syncState = 'syncing';
+
+            // 2. Background Server Sync
             try {
                 const res = await fetch('{{ route('api.driver.route.two_way') }}', {
                     method: 'POST',
@@ -616,9 +619,17 @@ function driverDashboard(initialData) {
                 const data = await res.json();
                 if (data.ok) {
                     this.isTwoWay = data.is_two_way;
+                    this.syncState = 'synced';
+                    setTimeout(() => {
+                        if (this.syncState === 'synced') this.syncState = 'idle';
+                    }, 2500);
+                } else {
+                    this.isTwoWay = !nextVal;
+                    this.syncState = 'idle';
                 }
             } catch (err) {
-                console.error('Failed to update route corridor type', err);
+                console.warn('Two-way toggle offline, state preserved locally', err);
+                this.syncState = 'offline_saved';
             }
         },
 

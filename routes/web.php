@@ -56,9 +56,14 @@ Route::middleware('auth')->group(function () {
         $user = Auth::user();
         $vehicle = $user->vehicle;
         $route = $user->driverRoute;
+        $driverRoutes = $user->driverRoutes()->orderBy('id', 'asc')->get();
+        $schedules = DriverScheduleController::getDriverWeeklySchedule($user);
+        $todaySchedule = collect($schedules)->firstWhere('day_of_week', now()->dayOfWeek);
 
-        return view('driver.dashboard', compact('vehicle', 'route'));
+        return view('driver.dashboard', compact('vehicle', 'route', 'driverRoutes', 'schedules', 'todaySchedule'));
     })->name('driver.dashboard');
+
+    Route::get('/driver/schedule', [DriverScheduleController::class, 'showView'])->name('driver.schedule');
 
     Route::get('/driver/vehicle', function () {
         /** @var User $user */
