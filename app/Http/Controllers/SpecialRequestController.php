@@ -177,6 +177,13 @@ class SpecialRequestController extends Controller
     {
         $user = Auth::user();
 
+        if ($user->role === 'driver') {
+            return response()->json([
+                'ok' => false,
+                'error' => 'حساب السائق مخصص لتقديم عروض الأسعار على الطلبات، ولا يمكن نشر طلب مشوار خاص بنفس الحساب.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'origin_name' => ['required', 'string', 'max:150'],
             'destination_name' => ['required', 'string', 'max:150'],

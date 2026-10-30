@@ -19,6 +19,10 @@ class TripHistoryController extends Controller
     {
         $user = Auth::user();
 
+        if ($user->role === 'driver') {
+            return response()->json(['error' => 'حساب الراكب مطلوب'], 403);
+        }
+
         // 1. Completed transit bookings
         $bookings = Booking::where('rider_id', $user->id)
             ->where('status', 'completed')

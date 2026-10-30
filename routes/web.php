@@ -143,7 +143,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/driver/bookings/{id}/confirm', [BookingController::class, 'confirmByDriver'])->name('api.driver.bookings.confirm');
 
     // Rider Bookings View & APIs
-    Route::get('/bookings', [BookingController::class, 'riderBookingsPage'])->name('rider.bookings');
+    Route::get('/bookings', function () {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user && $user->role === 'driver') {
+            return redirect()->route('driver.manifest');
+        }
+
+        return app(BookingController::class)->riderBookingsPage();
+    })->name('rider.bookings');
     Route::get('/api/rider/bookings', [BookingController::class, 'riderBookings'])->name('api.rider.bookings');
     Route::post('/api/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
 
@@ -155,9 +164,24 @@ Route::middleware('auth')->group(function () {
 
     // Milestone 6: Special Requests (مراسلة), Offers & Direct Chat
     Route::get('/requests', function () {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user && $user->role === 'driver') {
+            return redirect()->route('driver.offers');
+        }
+
         return view('rides.requests');
     })->name('rides.requests');
+
     Route::get('/requests/{id}', function ($id) {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user && $user->role === 'driver') {
+            return redirect()->route('driver.offers');
+        }
+
         return view('rides.request_detail', compact('id'));
     })->name('rides.request_detail');
 
@@ -189,6 +213,13 @@ Route::middleware('auth')->group(function () {
 
     // Milestone 7: Trip History for Both Roles & 1-5 Star Ratings
     Route::get('/trips', function () {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if ($user && $user->role === 'driver') {
+            return redirect()->route('driver.history');
+        }
+
         return view('rides.history');
     })->name('rides.history');
 

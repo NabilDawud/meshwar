@@ -60,7 +60,7 @@
     <!-- Top Header -->
     <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-slate-200 dark:border-slate-700 px-4 h-14 flex items-center justify-between">
         <div class="flex items-center gap-2">
-            <a href="{{ route('home') }}" class="flex items-center gap-2 font-bold text-lg text-teal-600 dark:text-teal-400">
+            <a href="{{ Auth::check() && Auth::user()->role === 'driver' ? route('driver.dashboard') : route('home') }}" class="flex items-center gap-2 font-bold text-lg text-teal-600 dark:text-teal-400">
                 <span class="text-2xl">🚐</span>
                 <span>مشوار</span>
             </a>

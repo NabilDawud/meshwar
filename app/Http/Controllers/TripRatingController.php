@@ -21,6 +21,10 @@ class TripRatingController extends Controller
     {
         $user = Auth::user();
 
+        if ($user->role === 'driver') {
+            return response()->json(['error' => 'التقييم متاح فقط للركاب لتقييم تجربة الرحلة'], 403);
+        }
+
         $validated = $request->validate([
             'trip_type' => ['required', 'string', 'in:line,special'],
             'trip_id' => ['required', 'integer'],

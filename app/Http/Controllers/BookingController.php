@@ -185,6 +185,11 @@ class BookingController extends Controller
     public function riderBookings(): JsonResponse
     {
         $user = Auth::user();
+
+        if ($user->role === 'driver') {
+            return response()->json(['error' => 'حساب الراكب مطلوب'], 403);
+        }
+
         $bookings = $this->getRiderBookings($user);
 
         return response()->json([
