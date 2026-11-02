@@ -9,7 +9,7 @@
                 ✨
             </span>
             <h1 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100 mb-1">
-                مرحباً بك، {{ Auth::user()->name }}!
+                مرحباً بك{{ Auth::user()?->name ? '، ' . Auth::user()->name : '' }}!
             </h1>
             <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                 اختر نوع حسابك ورقم هاتفك للمتابعة. هذا الاختيار يحدد واجهتك وخصائص التطبيق المخصصة لك.
