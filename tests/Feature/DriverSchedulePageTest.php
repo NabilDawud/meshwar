@@ -107,6 +107,35 @@ class DriverSchedulePageTest extends TestCase
         $response->assertSee('جم');
     }
 
+    public function test_driver_dashboard_renders_on_workday_and_holiday(): void
+    {
+        // Test on Monday (workday)
+        $this->travelTo(now()->next('Monday'));
+        $workdayRes = $this->actingAs($this->driver)->get('/driver');
+        $workdayRes->assertStatus(200);
+        $workdayRes->assertSee('المسار المعتمد لدوام اليوم');
+
+        // Test on Friday (weekly day off)
+        $this->travelTo(now()->next('Friday'));
+        $fridayRes = $this->actingAs($this->driver)->get('/driver');
+        $fridayRes->assertStatus(200);
+        $fridayRes->assertSee('إجازة أسبوعية');
+
+        $this->travelBack();
+    }
+
+    public function test_driver_dashboard_renders_when_driver_has_no_routes_yet(): void
+    {
+        $newDriver = User::factory()->create([
+            'role' => 'driver',
+            'email' => 'brand-new-driver@meshwar.local',
+        ]);
+
+        $response = $this->actingAs($newDriver)->get('/driver');
+        $response->assertStatus(200);
+        $response->assertSee('بناء خط السير الآن');
+    }
+
     public function test_weekly_schedule_helper_includes_short_names_and_abbreviations(): void
     {
         $schedules = DriverScheduleController::getDriverWeeklySchedule($this->driver);

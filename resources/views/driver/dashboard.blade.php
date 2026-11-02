@@ -1,6 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $dayNames = [
+        6 => 'السبت',
+        0 => 'الأحد',
+        1 => 'الإثنين',
+        2 => 'الثلاثاء',
+        3 => 'الأربعاء',
+        4 => 'الخميس',
+        5 => 'الجمعة',
+    ];
+    $currentDayOfWeek = now()->dayOfWeek;
+    $currentDayName = $currentDayName ?? ($todaySchedule['day_name_arabic'] ?? ($dayNames[$currentDayOfWeek] ?? 'اليوم'));
+@endphp
 <div class="p-4 flex flex-col gap-4" x-data="driverDashboard({
     status: '{{ $route->status ?? 'on_route' }}',
     statusArabic: '{{ $route->status_arabic ?? 'عامل على الخط المعتاد' }}'
@@ -524,7 +537,7 @@ function driverDashboard(initialData) {
         lastPositionAge: '{{ $route->position_age_arabic ?? 'غير محدد' }}',
         isBroadcasting: false,
         gpsWarning: null,
-        lastSentPoint: @if($route->last_latitude && $route->last_longitude) { lat: {{ $route->last_latitude }}, lng: {{ $route->last_longitude }} } @else null @endif,
+        lastSentPoint: @if($route && $route->last_latitude && $route->last_longitude) { lat: {{ $route->last_latitude }}, lng: {{ $route->last_longitude }} } @else null @endif,
         tripTimer: null,
 
         init() {

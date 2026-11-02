@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
         $vehicle = $user->vehicle;
         $driverRoutes = $user->driverRoutes;
         $todaySchedule = collect(DriverScheduleController::getDriverWeeklySchedule($user, $user->schedules))->firstWhere('day_of_week', now()->dayOfWeek);
+        $currentDayName = $todaySchedule['day_name_arabic'] ?? DriverScheduleController::DAYS_ORDER[now()->dayOfWeek] ?? 'اليوم';
         $todayRoute = null;
         if ($todaySchedule && ! empty($todaySchedule['route_id'])) {
             $todayRoute = $driverRoutes->firstWhere('id', $todaySchedule['route_id']);
@@ -70,7 +71,7 @@ Route::middleware('auth')->group(function () {
         $route = $todayRoute ?? ($driverRoutes->firstWhere('is_active', true) ?? $driverRoutes->first());
         $schedules = DriverScheduleController::getDriverWeeklySchedule($user, $user->schedules, $route);
 
-        return view('driver.dashboard', compact('vehicle', 'route', 'driverRoutes', 'schedules', 'todaySchedule'));
+        return view('driver.dashboard', compact('vehicle', 'route', 'driverRoutes', 'schedules', 'todaySchedule', 'currentDayName'));
     })->name('driver.dashboard');
 
     Route::get('/driver/schedule', [DriverScheduleController::class, 'showView'])->name('driver.schedule');
